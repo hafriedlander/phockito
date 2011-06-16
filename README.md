@@ -80,7 +80,7 @@ $mock->Bar(1, 3); // Returns null, since no stubed return value matches
 Mockito returns a type-compatible false, based on the declared return type. We don't have defined type values in
 PHP, so we always return null. TODO: Support using phpdoc @return when declared.
 
-### TODO
+## TODO
 
  - Spies
  - Mochito-specific hamcrest matchers (anyString, etc)
@@ -88,7 +88,7 @@ PHP, so we always return null. TODO: Support using phpdoc @return when declared.
  - Answers (dynamic responses for stubs)
  - doXXX stubbing
 
-### License
+## License
 
 Copyright (C) 2011 Hamish Friedlander / SilverStripe. Distributable under the same license as SilverStripe.
 
