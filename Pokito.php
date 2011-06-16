@@ -60,11 +60,19 @@ class Pokito {
 	public static $_responses = array();
 
 	/**
+	 * Array of defaults for a given class and method
+	 * @var array
+	 */
+	public static $_defaults = array();
+
+	/**
 	 * Checks if the two argument sets (passed as arrays) match. Simple serialized check for now, to be replaced by
 	 * something that can handle anyString etc matchers later
 	 */
-	public static function _arguments_match($a, $b) {
-		if (count($a) != count($b)) return null;
+	public static function _arguments_match($mockclass, $method, $a, $b) {
+		$defaults = self::$_defaults[$mockclass][$method]; $a = $a + $defaults; $b = $b + $defaults;
+		
+		if (count($a) != count($b)) return false;
 		
 		$i = count($a);
 		while($i--) {
@@ -85,9 +93,10 @@ class Pokito {
 	 * Called by the mock instances when a method is called. Records the call and returns a response if one has been
 	 * stubbed in
 	 */
-	public static function __called($instance, $method, $args) {
+	public static function __called($class, $instance, $method, $args) {
 		// Record the call as most recent first
 		array_unshift(self::$_call_list, array(
+			'class' => $class,
 			'instance' => $instance,
 			'method' => $method,
 			'args' => $args
@@ -99,7 +108,7 @@ class Pokito {
 
 			// Find the first one that matches the called-with arguments
 			foreach (self::$_responses[$instance][$method] as $i => &$matcher) {
-				if (self::_arguments_match($matcher['args'], $args)) {
+				if (self::_arguments_match($class, $method, $matcher['args'], $args)) {
 
 					// Consume the next response - except the last one, which repeats indefinitely
 					if (count($matcher['steps']) > 1) $response = array_shift($matcher['steps']);
@@ -140,6 +149,9 @@ class Pokito {
 
 		// Build up an array of php fragments that make the mocking class definition
 		$php = array();
+		
+		// And record the defaults at the same time
+		self::$_defaults[$mockerClass] = array();
 
 		// The only difference between mocking a class or an interface is how the mocking class extends from the mocked
 		$extends = $reflect->isInterface() ? 'implements' : 'extends';
@@ -165,15 +177,23 @@ EOT;
 			// Get the modifiers for the function as a string (static, public, etc) - ignore abstract though, all mock methods are concrete
 			$modifiers = implode(' ', Reflection::getModifierNames($method->getModifiers() & ~(ReflectionMethod::IS_ABSTRACT)));
 
-			// Turn the method arguments into a php arguments declaration, including possibly the by-reference "&" and any default
+			// PHP fragment that is the arguments definition for this method
 			$parameters = array();
-			foreach ($method->getParameters() as $parameter) {
+
+			// Array of defaults (sparse numeric)
+			self::$_defaults[$mockerClass][$method->name] = array();
+			
+			foreach ($method->getParameters() as $i => $parameter) {
+				// Turn the method arguments into a php arguments declaration, including possibly the by-reference "&" and any default
 				$parameters[] =
 					($parameter->isPassedByReference() ? '&' : '') .
 					'$' .
 					$parameter->getName() .
 					($parameter->isOptional() ? '=' . var_export($parameter->getDefaultValue(), true) : '')
 				;
+
+				// Also cache the default value for matching against later
+				if ($parameter->isOptional()) self::$_defaults[$mockerClass][$method->name][$i] = $parameter->getDefaultValue();
 			}
 
 			// Turn that array into a comma seperated list
@@ -184,7 +204,7 @@ EOT;
 $modifiers function {$method->name}( $parameters ){
  \$backtrace = debug_backtrace();
  \$instance = \$backtrace[0]['type'] == '::' ? '::$mockedClass' : \$this->__pokito_instanceid;
- return Pokito::__called(\$instance, '{$method->name}', func_get_args());
+ return Pokito::__called('$mockerClass', \$instance, '{$method->name}', func_get_args());
 }
 EOT;
 		}
@@ -251,7 +271,7 @@ EOT;
 	 * @return Pokito_VerifyBuilder
 	 */
 	static function verify($mock, $times = 1) {
-		return new Pokito_VerifyBuilder($mock->__pokito_instanceid, $times);
+		return new Pokito_VerifyBuilder(get_class($mock), $mock->__pokito_instanceid, $times);
 	}
 
 	/**
@@ -338,10 +358,12 @@ class Pokito_VerifyBuilder {
 
 	static $exception_class = null;
 
+	protected $class;
 	protected $instance;
 	protected $times;
 
-	function __construct($instance, $times) {
+	function __construct($class, $instance, $times) {
+		$this->class = $class;
 		$this->instance = $instance;
 		$this->times = $times;
 
@@ -356,7 +378,7 @@ class Pokito_VerifyBuilder {
 		$count = 0;
 
 		foreach (Pokito::$_call_list as $call) {
-			if ($call['instance'] == $this->instance && $call['method'] == $called && Pokito::_arguments_match($args, $call['args'])) {
+			if ($call['instance'] == $this->instance && $call['method'] == $called && Pokito::_arguments_match($this->class, $called, $args, $call['args'])) {
 				$count++;
 			}
 		}

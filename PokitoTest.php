@@ -134,6 +134,24 @@ class PokitoTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($mock2->Foo(), 2);
 	}
 
+	function testNoSpecForOptionalArgumentMatchesDefault() {
+		$mock = Pokito::mock('PokitoTest_FooHasIntegerDefaultArgument');
+		
+		Pokito::when($mock->Foo())->return(1);
+		$this->assertEquals($mock->Foo(), 1);
+		$this->assertEquals($mock->Foo(1), 1);
+		$this->assertNull($mock->Foo(2), 1);
+	}
+
+	function testSpecForOptionalArgumentDoesntAlsoMatchDefault() {
+		$mock = Pokito::mock('PokitoTest_FooHasIntegerDefaultArgument');
+
+		Pokito::when($mock->Foo(2))->return(1);
+		$this->assertNull($mock->Foo());
+		$this->assertNull($mock->Foo(1));
+		$this->assertEquals($mock->Foo(2), 1);
+	}
+
 	/** Test validating **/
 
 	/**   Against 0 */
