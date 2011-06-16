@@ -40,6 +40,46 @@ print_r($iterator->offsetGet(0));
 print_r($iterator->offsetGet(999));
 ```
 
+## Differences from Mockito
+
+#### Stubbing methods more flexible
+
+In Mockito, the methods when building a stub are limited to thenReturns, thenThrows. In Pokito, you can use any method
+as long as it has 'return' or 'throw' in it, so `Poktio::when(...)->return(1)->thenReturn(2)` is fine.
+
+#### Verify 'times' argument changed
+
+In Mockito, the 'times' argument to verify is an object of interface VerificationMode (like returned by the functions times,
+atLeastOnce, etc).
+
+For now we just take either an integer, or an integer followed by '+'. It's not extensible.
+
+#### Default arguments
+
+PHP has default arguments, unlike Java. If you don't specify a default argument in your stub or verify matcher, it'll
+match the default argument.
+
+```php
+class Foo {
+  function Bar($a, $b = 2){ /* NOP */ }
+}
+
+// Create the mock
+$mock = Pokito::mock('Foo');
+
+// Set up a stub
+Pokito::when($mock->Bar(1))->return('A');
+
+$mock->Bar(1); // Returns 'A'
+$mock->Bar(1, 2); // Also returns 'A'
+$mock->Bar(1, 3); // Returns null, since no stubed return value matches
+```
+
+#### Return typing
+
+Mockito returns a type-compatible false, based on the declared return type. We don't have defined type values in
+PHP, so we always return null. TODO: Support using phpdoc @return when declared.
+
 ### TODO
 
  - Spies
