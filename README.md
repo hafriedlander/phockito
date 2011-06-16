@@ -43,7 +43,7 @@ print_r($iterator->offsetGet(999));
 ### TODO
 
  - Spies
- - Argument matchers (anyString, etc)
+ - Mochito-specific hamcrest matchers (anyString, etc)
  - Ordered verification
  - Answers (dynamic responses for stubs)
  - doXXX stubbing

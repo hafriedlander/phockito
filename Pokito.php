@@ -64,7 +64,21 @@ class Pokito {
 	 * something that can handle anyString etc matchers later
 	 */
 	public static function _arguments_match($a, $b) {
-		return serialize($a) == serialize($b);
+		if (count($a) != count($b)) return null;
+		
+		$i = count($a);
+		while($i--) {
+			$u = $a[$i]; $v = $b[$i];
+			
+			if (interface_exists('Hamcrest_Matcher') && $u instanceof Hamcrest_Matcher) {
+				if (!$u->matches($v)) return false;
+			}
+			else {
+				if (serialize($u) != serialize($v)) return false;
+			}
+		}
+		
+		return true;
 	}
 
 	/**
@@ -256,6 +270,17 @@ EOT;
 		}
 	}
 
+	/**
+	 * Includes the Hamcrest matchers. You don't have to, but if you don't you can't to nice generic stubbing and verification
+	 * @static
+	 * @param bool $as_globals - When true (the default) the hamcrest matchers are available as global functions. If false, they're only available as static methods on Hamcrest_Matchers
+	 */
+	static function include_hamcrest($include_globals = true) {
+		set_include_path(get_include_path().PATH_SEPARATOR.dirname(__FILE__).'/hamcrest-php/hamcrest');
+		
+		if ($include_globals) require_once('Hamcrest.php');
+		else require_once('Hamcrest/Matchers.php');
+	}
 }
 
 /**
