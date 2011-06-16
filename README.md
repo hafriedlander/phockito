@@ -9,7 +9,7 @@ Checkout [the original's website](http://mockito.org/) for the philosophy behind
 
 ```php
 // Create the mock
-$iterator = Pokito.mock('ArrayIterator);
+$iterator = Pokito::mock('ArrayIterator);
 
 // Use the mock object - doesn't do anything, functions return null
 $iterator->append('Test');
@@ -21,13 +21,14 @@ Pokito::verify($iterator)->append('Test');
 Pokito::verify($iterator, 1)->asort();
 ```
 
-If PHPUnit is available, verify throws
+If PHPUnit is available, on failure verify throws a `PHPUnit_Framework_AssertionFailedError` (looks like an assertion failure),
+otherwise just throws an `Exception`
 
 ## Example stubbing:
 
 ```php
 // Create the mock
-$iterator = Pokito.mock('ArrayIterator);
+$iterator = Pokito::mock('ArrayIterator);
 
 // Stub in a value
 Pokito::when($iterator->offsetGet(0))->return('first');
