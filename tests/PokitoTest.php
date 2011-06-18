@@ -1,7 +1,7 @@
 <?php
 
 // Include Pokito
-require_once(dirname(__FILE__) . '/Pokito.php');
+require_once(dirname(dirname(__FILE__)) . '/Pokito.php');
 
 /** Base class to mock */
 
@@ -99,6 +99,13 @@ class PokitoTest extends PHPUnit_Framework_TestCase {
 		$mock = Pokito::mock('PokitoTest_MockMe');
 
 		Pokito::when($mock->Foo())->return(1);
+		$this->assertEquals($mock->Foo(), 1);
+	}
+
+	function testCanSpecifySingleReturnValueWithAlternateAPI(){
+		$mock = Pokito::mock('PokitoTest_MockMe');
+
+		Pokito::when($mock)->Foo()->return(1);
 		$this->assertEquals($mock->Foo(), 1);
 	}
 

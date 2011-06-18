@@ -155,10 +155,11 @@ class Pokito {
 
 		// The only difference between mocking a class or an interface is how the mocking class extends from the mocked
 		$extends = $reflect->isInterface() ? 'implements' : 'extends';
+		$marker = $reflect->isInterface() ? ', Pokito_MockMarker' : 'implements Pokito_MockMarker';
 
 		// Build the class opening stanza, including giving any instance a unique string ID
 		$php[] = <<<EOT
-class $mockerClass $extends $mockedClass {
+class $mockerClass $extends $mockedClass $marker {
 public \$__pokito_instanceid;
 function __construct() { \$this->__pokito_instanceid = '$mockedClass:'.(++Pokito::\$_instanceid_counter); }
 EOT;
@@ -256,9 +257,14 @@ EOT;
 	 * @static
 	 * @return Pokito_WhenBuilder
 	 */
-	static function when() {
-		$method = array_shift(self::$_call_list);
-		return new Pokito_WhenBuilder($method);
+	static function when($arg = null) {
+		if ($arg instanceof Pokito_MockMarker) {
+			return new Pokito_WhenBuilder($arg->__pokito_instanceid);
+		}
+		else {
+			$method = array_shift(self::$_call_list);
+			return new Pokito_WhenBuilder($method['instance'], $method['method'], $method['args']);
+		}
 	}
 
 	/**
@@ -304,6 +310,13 @@ EOT;
 }
 
 /**
+ * Marks all mocks for easy identification
+ */
+interface Pokito_MockMarker {
+
+}
+
+/**
  * A builder than is returned by Pokito::when to capture the methods that specify the stubbed responses
  * for a particular mocked method / arguments set
  */
@@ -313,37 +326,50 @@ class Pokito_WhenBuilder {
 	protected $method;
 	protected $i;
 
-	function __construct($mocked) {
-		$this->instance = $instance = $mocked['instance'];
-		$this->method = $method = $mocked['method'];
+	/**
+	 * Store the method and args we're stubbing
+	 */
+	private function __pokito_setMethod($method, $args) {
+		$instance = $this->instance;
+		$this->method = $method;
 
 		if (!isset(Pokito::$_responses[$instance])) Pokito::$_responses[$instance] = array();
 		if (!isset(Pokito::$_responses[$instance][$method])) Pokito::$_responses[$instance][$method] = array();
 
 		$this->i = count(Pokito::$_responses[$instance][$method]);
 		Pokito::$_responses[$instance][$method][] = array(
-			'args' => $mocked['args'],
+			'args' => $args,
 			'steps' => array()
 		);
 	}
 
+	function __construct($instance, $method = null, $args = null) {
+		$this->instance = $instance;
+		if ($method) $this->__pokito_setMethod($method, $args);
+	}
+
 	/**
-	 * Record the next stubbed response in the sequence
+	 * Either record the method we're stubbing, or record the next stubbed response in the sequence if we know the stubbed method already
 	 *
 	 * To be as flexible as possible, we accept _any_ method with "return" in it as a return response, and anything with
 	 * throw in it as a throw response.
 	 */
 	function __call($called, $args) {
-		$value = $args[0]; $action = null;
+		if (!$this->method) {
+			$this->__pokito_setMethod($called, $args);
+		}
+		else {
+			$value = $args[0]; $action = null;
 
-		if (preg_match('/return/i', $called)) $action = 'return';
-		else if (preg_match('/throw/i', $called)) $action = 'throw';
-		else user_error("Unknown when action $called - should contain return or throw somewhere in method name", E_USER_ERROR);
+			if (preg_match('/return/i', $called)) $action = 'return';
+			else if (preg_match('/throw/i', $called)) $action = 'throw';
+			else user_error("Unknown when action $called - should contain return or throw somewhere in method name", E_USER_ERROR);
 
-		Pokito::$_responses[$this->instance][$this->method][$this->i]['steps'][] = array(
-			'action' => $action,
-			'value' => $value
-		);
+			Pokito::$_responses[$this->instance][$this->method][$this->i]['steps'][] = array(
+				'action' => $action,
+				'value' => $value
+			);
+		}
 
 		return $this;
 	}

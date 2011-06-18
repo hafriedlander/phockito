@@ -1,7 +1,7 @@
 <?php
 
 // Include Pokito
-require_once(dirname(__FILE__) . '/Pokito.php');
+require_once(dirname(dirname(__FILE__)) . '/Pokito.php');
 Pokito::include_hamcrest();
 
 class PokitoHamcrestTest_MockMe {
