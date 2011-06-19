@@ -115,9 +115,10 @@ class Phockito {
 		}
 	}
 
-	public static function __perform_response($response) {
+	public static function __perform_response($response, $args) {
 		if ($response['action'] == 'return') return $response['value'];
-		else if ($response['action'] = 'throw') { $class = $response['value']; throw new $class(); }
+		else if ($response['action'] == 'throw') { $class = $response['value']; throw new $class(); }
+		else if ($response['action'] == 'callback') return call_user_func_array($response['value'], $args);
 		else user_error("Got unknown action {$response['action']} - how did that happen?", E_USER_ERROR);
 	}
 
@@ -208,12 +209,14 @@ EOT;
 			// Build an overriding method that calls Phockito::__called, and never calls the parent
 			$php[] = <<<EOT
   $modifiers function {$method->name}( $defparams ){
+    \$args = func_get_args();
+
     \$backtrace = debug_backtrace();
     \$instance = \$backtrace[0]['type'] == '::' ? '::$mockedClass' : \$this->__phockito_instanceid;
 
-    \$response = Phockito::__called('$mockedClass', \$instance, '{$method->name}', func_get_args());
+    \$response = Phockito::__called('$mockedClass', \$instance, '{$method->name}', \$args);
   
-    if (\$response) return Phockito::__perform_response(\$response);
+    if (\$response) return Phockito::__perform_response(\$response, \$args);
     else return $failover;
   }
 EOT;
@@ -388,6 +391,7 @@ class Phockito_WhenBuilder {
 
 			if (preg_match('/return/i', $called)) $action = 'return';
 			else if (preg_match('/throw/i', $called)) $action = 'throw';
+			else if (preg_match('/callback/i', $called)) $action = 'callback';
 			else user_error("Unknown when action $called - should contain return or throw somewhere in method name", E_USER_ERROR);
 
 			Phockito::$_responses[$this->instance][$this->method][$this->i]['steps'][] = array(

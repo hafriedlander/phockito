@@ -33,6 +33,7 @@ class PhockitoTest_FooHasByReferenceArgument { function Foo(&$a) { } }
 /** A class to get Phockito to throw when verification fails, to tell difference between Phockito failure and other PHPUnit assert failures */
 
 class PhockitoTest_VerificationFailure extends Exception {}
+class PhockitoTest_StubResponse extends Exception {}
 
 /** And the tests themselves */
 
@@ -157,6 +158,26 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$this->assertNull($mock->Foo());
 		$this->assertNull($mock->Foo(1));
 		$this->assertEquals($mock->Foo(2), 1);
+	}
+
+	/** @expectedException PhockitoTest_StubResponse
+	 */
+	function testCanSpecifyThrowResponse() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+
+		Phockito::when($mock->Foo())->throw('PhockitoTest_StubResponse');
+		$mock->Foo();
+	}
+
+	function _testCanSpecifyCallbackResponse_callback() {
+		return 'Foo';
+	}
+
+	function testCanSpecifyCallbackResponse() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+
+		Phockito::when($mock->Foo())->callback(array($this, '_testCanSpecifyCallbackResponse_callback'));
+		$this->assertEquals($mock->Foo(), 'Foo');
 	}
 
 	/** Test validating **/
