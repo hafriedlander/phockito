@@ -104,28 +104,21 @@ class Pokito {
 
 		// Look up any stubbed responses
 		if (isset(self::$_responses[$instance][$method])) {
-			$response = null;
-
 			// Find the first one that matches the called-with arguments
 			foreach (self::$_responses[$instance][$method] as $i => &$matcher) {
 				if (self::_arguments_match($class, $method, $matcher['args'], $args)) {
-
 					// Consume the next response - except the last one, which repeats indefinitely
-					if (count($matcher['steps']) > 1) $response = array_shift($matcher['steps']);
-					else $response = reset($matcher['steps']);
-
-					break;
+					if (count($matcher['steps']) > 1) return array_shift($matcher['steps']);
+					else return reset($matcher['steps']);
 				}
 			}
-			unset ($matcher);
-
-			// If we got a stubbed response, do it.
-			if ($response) {
-				if ($response['action'] == 'return') return $response['value'];
-				else if ($response['action'] = 'throw') { $class = $response['value']; throw new $class(); }
-				else user_error("Got unknown action {$response['action']} - how did that happen?", E_USER_ERROR);
-			}
 		}
+	}
+
+	public static function __perform_response($response) {
+		if ($response['action'] == 'return') return $response['value'];
+		else if ($response['action'] = 'throw') { $class = $response['value']; throw new $class(); }
+		else user_error("Got unknown action {$response['action']} - how did that happen?", E_USER_ERROR);
 	}
 
 	/* ** INTERNAL INTERFACES END ** */
@@ -135,12 +128,13 @@ class Pokito {
 	 * create the mocking class php and eval it into the current running environment
 	 *
 	 * @static
+	 * @param bool $partial - Should test double be a partial or a full mock
 	 * @param string $mockerClass - The name of the class to create the mock as
 	 * @param string $mockedClass - The name of the class (or interface) to create a mock of
 	 * @param bool $ignore_finals - If true, silently ignore method marked as final. If false, raise error if method marked as final encountered
 	 * @return void
 	 */
-	protected static function build_mock_for($mockerClass, $mockedClass, $ignore_finals = false) {
+	protected static function build_test_double($partial, $mockerClass, $mockedClass, $ignore_finals = false) {
 		// Bail if we were passed a classname that doesn't exist
 		if (!class_exists($mockedClass) && !interface_exists($mockedClass)) user_error("Can't mock non-existant class $mockedClass", E_USER_ERROR);
 
@@ -151,7 +145,7 @@ class Pokito {
 		$php = array();
 		
 		// And record the defaults at the same time
-		self::$_defaults[$mockerClass] = array();
+		self::$_defaults[$mockedClass] = array();
 
 		// The only difference between mocking a class or an interface is how the mocking class extends from the mocked
 		$extends = $reflect->isInterface() ? 'implements' : 'extends';
@@ -160,8 +154,14 @@ class Pokito {
 		// Build the class opening stanza, including giving any instance a unique string ID
 		$php[] = <<<EOT
 class $mockerClass $extends $mockedClass $marker {
-public \$__pokito_instanceid;
-function __construct() { \$this->__pokito_instanceid = '$mockedClass:'.(++Pokito::\$_instanceid_counter); }
+
+  public \$__pokito_class;
+  public \$__pokito_instanceid;
+
+  function __construct() {
+    \$this->__pokito_class = '$mockedClass';
+    \$this->__pokito_instanceid = '$mockedClass:'.(++Pokito::\$_instanceid_counter);
+  }
 EOT;
 
 		// Step through every method declared on the object
@@ -179,40 +179,49 @@ EOT;
 			$modifiers = implode(' ', Reflection::getModifierNames($method->getModifiers() & ~(ReflectionMethod::IS_ABSTRACT)));
 
 			// PHP fragment that is the arguments definition for this method
-			$parameters = array();
+			$defparams = array(); $callparams = array();
 
 			// Array of defaults (sparse numeric)
-			self::$_defaults[$mockerClass][$method->name] = array();
+			self::$_defaults[$mockedClass][$method->name] = array();
 			
 			foreach ($method->getParameters() as $i => $parameter) {
-				// Turn the method arguments into a php arguments declaration, including possibly the by-reference "&" and any default
-				$parameters[] =
+				// Turn the method arguments into a php fragment that calls a function with them
+				$callparams[] = '$'.$parameter->getName();
+
+				// Turn the method arguments into a php fragment the defines a function with them, including possibly the by-reference "&" and any default
+				$defparam[] =
 					($parameter->isPassedByReference() ? '&' : '') .
-					'$' .
-					$parameter->getName() .
+					'$'.$parameter->getName() .
 					($parameter->isOptional() ? '=' . var_export($parameter->getDefaultValue(), true) : '')
 				;
 
-				// Also cache the default value for matching against later
-				if ($parameter->isOptional()) self::$_defaults[$mockerClass][$method->name][$i] = $parameter->getDefaultValue();
+				// Finally cache the default value for matching against later
+				if ($parameter->isOptional()) self::$_defaults[$mockedClass][$method->name][$i] = $parameter->getDefaultValue();
 			}
 
 			// Turn that array into a comma seperated list
-			$parameters = implode(', ', $parameters);
+			$defparams = implode(', ', $defparams); $callparams = implode(', ', $callparams);
+
+			// What to do if there's no stubbed response
+			$failover = $partial ? "parent::{$method->name}( $callparams )" : "null";
 
 			// Build an overriding method that calls Pokito::__called, and never calls the parent
 			$php[] = <<<EOT
-$modifiers function {$method->name}( $parameters ){
- \$backtrace = debug_backtrace();
- \$instance = \$backtrace[0]['type'] == '::' ? '::$mockedClass' : \$this->__pokito_instanceid;
- return Pokito::__called('$mockerClass', \$instance, '{$method->name}', func_get_args());
-}
+  $modifiers function {$method->name}( $defparams ){
+    \$backtrace = debug_backtrace();
+    \$instance = \$backtrace[0]['type'] == '::' ? '::$mockedClass' : \$this->__pokito_instanceid;
+
+    \$response = Pokito::__called('$mockedClass', \$instance, '{$method->name}', func_get_args());
+  
+    if (\$response) return Pokito::__perform_response(\$response);
+    else return $failover;
+  }
 EOT;
 		}
 
 		// Close off the class definition and eval it to create the class as an extant entity.
 		$php[] = '}';
-		eval(implode("\n", $php));
+		eval(implode("\n\n", $php));
 	}
 
 	/**
@@ -226,7 +235,7 @@ EOT;
 	 */
 	static function mock_class($class, $ignore_finals = false) {
 		$mockClass = '__pokito_'.$class.'_Mock';
-		if (!class_exists($mockClass)) self::build_mock_for($mockClass, $class, $ignore_finals);
+		if (!class_exists($mockClass)) self::build_test_double(false, $mockClass, $class, $ignore_finals);
 
 		return $mockClass;
 	}
@@ -249,6 +258,22 @@ EOT;
 	 */
 	static function mock($class, $ignore_finals = false) {
 		return self::mock_instance($class, $ignore_finals);
+	}
+
+	static function spy_class($class, $ignore_finals = false) {
+		$spyClass = '__pokito_'.$class.'_Spy';
+		if (!class_exists($spyClass)) self::build_test_double(true, $spyClass, $class, $ignore_finals);
+
+		return $spyClass;
+	}
+
+	static function spy_instance($class, $ignore_finals = false) {
+		$spyClass = self::spy_class($class, $ignore_finals);
+		return new $spyClass();
+	}
+
+	static function spy($class, $ignore_finals = false) {
+		return self::spy_instance($class, $ignore_finals);
 	}
 
 	/**
@@ -277,7 +302,7 @@ EOT;
 	 * @return Pokito_VerifyBuilder
 	 */
 	static function verify($mock, $times = 1) {
-		return new Pokito_VerifyBuilder(get_class($mock), $mock->__pokito_instanceid, $times);
+		return new Pokito_VerifyBuilder($mock->__pokito_class, $mock->__pokito_instanceid, $times);
 	}
 
 	/**
