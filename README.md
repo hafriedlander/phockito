@@ -1,4 +1,4 @@
-# Pokito - Mockito for PHP
+# Phockito - Mockito for PHP
 
 Mocking framework inspired by Mockito for Java
 
@@ -11,16 +11,16 @@ Thanks to the developers of Mockito for the inspiration, and hamcrest-php for ma
 
 ```php
 // Create the mock
-$iterator = Pokito::mock('ArrayIterator);
+$iterator = Phockito::mock('ArrayIterator);
 
 // Use the mock object - doesn't do anything, functions return null
 $iterator->append('Test');
 $iterator->asort();
 
 // Selectively verify execution
-Pokito::verify($iterator)->append('Test');
+Phockito::verify($iterator)->append('Test');
 // 1 is default - can also do 2, 3  for exact numbers, or 1+ for at least one, or 0 for never
-Pokito::verify($iterator, 1)->asort();
+Phockito::verify($iterator, 1)->asort();
 ```
 
 If PHPUnit is available, on failure verify throws a `PHPUnit_Framework_AssertionFailedError` (looks like an assertion failure),
@@ -30,10 +30,10 @@ otherwise just throws an `Exception`
 
 ```php
 // Create the mock
-$iterator = Pokito::mock('ArrayIterator);
+$iterator = Phockito::mock('ArrayIterator);
 
 // Stub in a value
-Pokito::when($iterator->offsetGet(0))->return('first');
+Phockito::when($iterator->offsetGet(0))->return('first');
 
 // Prints "first"
 print_r($iterator->offsetGet(0));
@@ -46,7 +46,7 @@ print_r($iterator->offsetGet(999));
 
 #### Stubbing methods more flexible
 
-In Mockito, the methods when building a stub are limited to thenReturns, thenThrows. In Pokito, you can use any method
+In Mockito, the methods when building a stub are limited to thenReturns, thenThrows. In Phockito, you can use any method
 as long as it has 'return' or 'throw' in it, so `Poktio::when(...)->return(1)->thenReturn(2)` is fine.
 
 #### Verify 'times' argument changed
@@ -67,10 +67,10 @@ class Foo {
 }
 
 // Create the mock
-$mock = Pokito::mock('Foo');
+$mock = Phockito::mock('Foo');
 
 // Set up a stub
-Pokito::when($mock->Bar(1))->return('A');
+Phockito::when($mock->Bar(1))->return('A');
 
 $mock->Bar(1); // Returns 'A'
 $mock->Bar(1, 2); // Also returns 'A'

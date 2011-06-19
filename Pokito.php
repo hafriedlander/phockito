@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Pokito - Mockito for PHP
+ * Phockito - Mockito for PHP
  *
  * Mocking framework based on Mockito for Java
  *
@@ -10,24 +10,24 @@
  * Example usage:
  *
  *   // Create the mock
- *   $iterator = Pokito.mock('ArrayIterator);
+ *   $iterator = Phockito.mock('ArrayIterator);
  *
  *   // Use the mock object - doesn't do anything, functions return null
  *   $iterator->append('Test');
  *   $iterator->asort();
  *
  *   // Selectively verify execution
- *   Pokito::verify($iterator)->append('Test');
+ *   Phockito::verify($iterator)->append('Test');
  *   // 1 is default - can also do 2, 3  for exact numbers, or 1+ for at least one, or 0 for never
- *   Pokito::verify($iterator, 1)->asort();
+ *   Phockito::verify($iterator, 1)->asort();
  *
  * Example stubbing:
  *
  *   // Create the mock
- *   $iterator = Pokito.mock('ArrayIterator);
+ *   $iterator = Phockito.mock('ArrayIterator);
  *
  *   // Stub in a value
- *   Pokito::when($iterator->offsetGet(0))->return('first');
+ *   Phockito::when($iterator->offsetGet(0))->return('first');
  *
  *   // Prints "first"
  *   print_r($iterator->offsetGet(0));
@@ -39,7 +39,7 @@
  * Note that several functions are declared as public so that builder classes can access them. Anything
  * starting with an "_" is for internal consumption only
  */
-class Pokito {
+class Phockito {
 
 	/* ** INTERNAL INTERFACES START **
 		These are declared as public so that mocks and builders can access them,
@@ -149,18 +149,18 @@ class Pokito {
 
 		// The only difference between mocking a class or an interface is how the mocking class extends from the mocked
 		$extends = $reflect->isInterface() ? 'implements' : 'extends';
-		$marker = $reflect->isInterface() ? ', Pokito_MockMarker' : 'implements Pokito_MockMarker';
+		$marker = $reflect->isInterface() ? ', Phockito_MockMarker' : 'implements Phockito_MockMarker';
 
 		// Build the class opening stanza, including giving any instance a unique string ID
 		$php[] = <<<EOT
 class $mockerClass $extends $mockedClass $marker {
 
-  public \$__pokito_class;
-  public \$__pokito_instanceid;
+  public \$__phockito_class;
+  public \$__phockito_instanceid;
 
   function __construct() {
-    \$this->__pokito_class = '$mockedClass';
-    \$this->__pokito_instanceid = '$mockedClass:'.(++Pokito::\$_instanceid_counter);
+    \$this->__phockito_class = '$mockedClass';
+    \$this->__phockito_instanceid = '$mockedClass:'.(++Phockito::\$_instanceid_counter);
   }
 EOT;
 
@@ -205,15 +205,15 @@ EOT;
 			// What to do if there's no stubbed response
 			$failover = $partial ? "parent::{$method->name}( $callparams )" : "null";
 
-			// Build an overriding method that calls Pokito::__called, and never calls the parent
+			// Build an overriding method that calls Phockito::__called, and never calls the parent
 			$php[] = <<<EOT
   $modifiers function {$method->name}( $defparams ){
     \$backtrace = debug_backtrace();
-    \$instance = \$backtrace[0]['type'] == '::' ? '::$mockedClass' : \$this->__pokito_instanceid;
+    \$instance = \$backtrace[0]['type'] == '::' ? '::$mockedClass' : \$this->__phockito_instanceid;
 
-    \$response = Pokito::__called('$mockedClass', \$instance, '{$method->name}', func_get_args());
+    \$response = Phockito::__called('$mockedClass', \$instance, '{$method->name}', func_get_args());
   
-    if (\$response) return Pokito::__perform_response(\$response);
+    if (\$response) return Phockito::__perform_response(\$response);
     else return $failover;
   }
 EOT;
@@ -231,10 +231,10 @@ EOT;
 	 * @static
 	 * @param string $class - The class to mock
 	 * @param bool $ignore_finals - True if methods declared as final in the mock are silently ignored, false to throw an error
-	 * @return string - The class that acts as a Pokito mock of the passed class
+	 * @return string - The class that acts as a Phockito mock of the passed class
 	 */
 	static function mock_class($class, $ignore_finals = false) {
-		$mockClass = '__pokito_'.$class.'_Mock';
+		$mockClass = '__phockito_'.$class.'_Mock';
 		if (!class_exists($mockClass)) self::build_test_double(false, $mockClass, $class, $ignore_finals);
 
 		return $mockClass;
@@ -261,7 +261,7 @@ EOT;
 	}
 
 	static function spy_class($class, $ignore_finals = false) {
-		$spyClass = '__pokito_'.$class.'_Spy';
+		$spyClass = '__phockito_'.$class.'_Spy';
 		if (!class_exists($spyClass)) self::build_test_double(true, $spyClass, $class, $ignore_finals);
 
 		return $spyClass;
@@ -280,15 +280,15 @@ EOT;
 	 * When builder. Starts stubbing the method called to build the argument passed to when
 	 *
 	 * @static
-	 * @return Pokito_WhenBuilder
+	 * @return Phockito_WhenBuilder
 	 */
 	static function when($arg = null) {
-		if ($arg instanceof Pokito_MockMarker) {
-			return new Pokito_WhenBuilder($arg->__pokito_instanceid);
+		if ($arg instanceof Phockito_MockMarker) {
+			return new Phockito_WhenBuilder($arg->__phockito_instanceid);
 		}
 		else {
 			$method = array_shift(self::$_call_list);
-			return new Pokito_WhenBuilder($method['instance'], $method['method'], $method['args']);
+			return new Phockito_WhenBuilder($method['instance'], $method['method'], $method['args']);
 		}
 	}
 
@@ -297,22 +297,22 @@ EOT;
 	 * DSL object that catches the method to verify
 	 *
 	 * @static
-	 * @param Pokito_Mock $mock - The mock instance to verify
+	 * @param Phockito_Mock $mock - The mock instance to verify
 	 * @param string $times - The number of times the method should be called, either a number, or a number followed by "+"
-	 * @return Pokito_VerifyBuilder
+	 * @return Phockito_VerifyBuilder
 	 */
 	static function verify($mock, $times = 1) {
-		return new Pokito_VerifyBuilder($mock->__pokito_class, $mock->__pokito_instanceid, $times);
+		return new Phockito_VerifyBuilder($mock->__phockito_class, $mock->__phockito_instanceid, $times);
 	}
 
 	/**
 	 * Reset a mock instance. Forget all calls and stubbed responses for a given instance
 	 * @static
-	 * @param Pokito_Mock $mock - The mock instance to reset
+	 * @param Phockito_Mock $mock - The mock instance to reset
 	 */
 	static function reset($mock) {
 		// Get the instance ID. Only resets instance-specific info ATM
-		$instance = $mock->__pokito_instanceid;
+		$instance = $mock->__phockito_instanceid;
 		// Remove any stored returns
 		unset(self::$_responses[$instance]);
 		// Remove all call history
@@ -337,15 +337,15 @@ EOT;
 /**
  * Marks all mocks for easy identification
  */
-interface Pokito_MockMarker {
+interface Phockito_MockMarker {
 
 }
 
 /**
- * A builder than is returned by Pokito::when to capture the methods that specify the stubbed responses
+ * A builder than is returned by Phockito::when to capture the methods that specify the stubbed responses
  * for a particular mocked method / arguments set
  */
-class Pokito_WhenBuilder {
+class Phockito_WhenBuilder {
 
 	protected $instance;
 	protected $method;
@@ -354,15 +354,15 @@ class Pokito_WhenBuilder {
 	/**
 	 * Store the method and args we're stubbing
 	 */
-	private function __pokito_setMethod($method, $args) {
+	private function __phockito_setMethod($method, $args) {
 		$instance = $this->instance;
 		$this->method = $method;
 
-		if (!isset(Pokito::$_responses[$instance])) Pokito::$_responses[$instance] = array();
-		if (!isset(Pokito::$_responses[$instance][$method])) Pokito::$_responses[$instance][$method] = array();
+		if (!isset(Phockito::$_responses[$instance])) Phockito::$_responses[$instance] = array();
+		if (!isset(Phockito::$_responses[$instance][$method])) Phockito::$_responses[$instance][$method] = array();
 
-		$this->i = count(Pokito::$_responses[$instance][$method]);
-		Pokito::$_responses[$instance][$method][] = array(
+		$this->i = count(Phockito::$_responses[$instance][$method]);
+		Phockito::$_responses[$instance][$method][] = array(
 			'args' => $args,
 			'steps' => array()
 		);
@@ -370,7 +370,7 @@ class Pokito_WhenBuilder {
 
 	function __construct($instance, $method = null, $args = null) {
 		$this->instance = $instance;
-		if ($method) $this->__pokito_setMethod($method, $args);
+		if ($method) $this->__phockito_setMethod($method, $args);
 	}
 
 	/**
@@ -381,7 +381,7 @@ class Pokito_WhenBuilder {
 	 */
 	function __call($called, $args) {
 		if (!$this->method) {
-			$this->__pokito_setMethod($called, $args);
+			$this->__phockito_setMethod($called, $args);
 		}
 		else {
 			$value = $args[0]; $action = null;
@@ -390,7 +390,7 @@ class Pokito_WhenBuilder {
 			else if (preg_match('/throw/i', $called)) $action = 'throw';
 			else user_error("Unknown when action $called - should contain return or throw somewhere in method name", E_USER_ERROR);
 
-			Pokito::$_responses[$this->instance][$this->method][$this->i]['steps'][] = array(
+			Phockito::$_responses[$this->instance][$this->method][$this->i]['steps'][] = array(
 				'action' => $action,
 				'value' => $value
 			);
@@ -401,11 +401,11 @@ class Pokito_WhenBuilder {
 }
 
 /**
- * A builder than is returned by Pokito::verify to capture the method that specifies the verified method
+ * A builder than is returned by Phockito::verify to capture the method that specifies the verified method
  * Throws an exception if the verified method hasn't been called "$times" times, either a PHPUnit exception
  * or just an Exception if PHPUnit doesn't exist
  */
-class Pokito_VerifyBuilder {
+class Phockito_VerifyBuilder {
 
 	static $exception_class = null;
 
@@ -428,8 +428,8 @@ class Pokito_VerifyBuilder {
 	function __call($called, $args) {
 		$count = 0;
 
-		foreach (Pokito::$_call_list as $call) {
-			if ($call['instance'] == $this->instance && $call['method'] == $called && Pokito::_arguments_match($this->class, $called, $args, $call['args'])) {
+		foreach (Phockito::$_call_list as $call) {
+			if ($call['instance'] == $this->instance && $call['method'] == $called && Phockito::_arguments_match($this->class, $called, $args, $call['args'])) {
 				$count++;
 			}
 		}

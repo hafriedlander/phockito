@@ -1,23 +1,23 @@
 <?php
 
-// Include Pokito
+// Include Phockito
 require_once(dirname(dirname(__FILE__)) . '/Pokito.php');
-Pokito::include_hamcrest();
+Phockito::include_hamcrest();
 
-class PokitoHamcrestTest_MockMe {
+class PhockitoHamcrestTest_MockMe {
 	function Foo($a, $b) { throw new Exception('Base method Foo was called'); }
 	function Bar($a) { throw new Exception('Base method Bar was called'); }
 }
 
-class PokitoHamcrestTest extends PHPUnit_Framework_TestCase {
+class PhockitoHamcrestTest extends PHPUnit_Framework_TestCase {
 
 	/** Test stubbing **/
 
 	function testCanStubByType() {
-		$mock = Pokito::mock('PokitoHamcrestTest_MockMe');
+		$mock = Phockito::mock('PhockitoHamcrestTest_MockMe');
 		
-		Pokito::when($mock->Foo(intValue(), stringValue()))->return('int,string');
-		Pokito::when($mock->Foo(stringValue(), stringValue()))->return('string,string');
+		Phockito::when($mock->Foo(intValue(), stringValue()))->return('int,string');
+		Phockito::when($mock->Foo(stringValue(), stringValue()))->return('string,string');
 		
 		$this->assertNull($mock->Foo(1, 1));		
 		$this->assertEquals($mock->Foo(1, 'a'), 'int,string');
@@ -26,11 +26,11 @@ class PokitoHamcrestTest extends PHPUnit_Framework_TestCase {
 	}
 
 	function testCanVerifyByType() {
-		$mock = Pokito::mock('PokitoHamcrestTest_MockMe');
+		$mock = Phockito::mock('PhockitoHamcrestTest_MockMe');
 
 		$mock->Bar('Pow!');
 		$mock->Bar('Bam!');
 		
-		Pokito::verify($mock, 2)->Bar(stringValue());
+		Phockito::verify($mock, 2)->Bar(stringValue());
 	}
 }

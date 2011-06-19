@@ -1,40 +1,40 @@
 <?php
 
-// Include Pokito
+// Include Phockito
 require_once(dirname(dirname(__FILE__)) . '/Pokito_Globals.php');
 
-class PokitoGlobalsTest_MockMe {
+class PhockitoGlobalsTest_MockMe {
 	function Foo() { return 'Foo'; }
 	function Bar() { return 'Bar'; }
 }
 
 /** And the tests themselves */
 
-class PokitoGlobalsTest extends PHPUnit_Framework_TestCase {
+class PhockitoGlobalsTest extends PHPUnit_Framework_TestCase {
 
 	function testCanBuildMock() {
-		$mock = mock('PokitoGlobalsTest_MockMe');
-		$this->assertInstanceOf('PokitoGlobalsTest_MockMe', $mock);
+		$mock = mock('PhockitoGlobalsTest_MockMe');
+		$this->assertInstanceOf('PhockitoGlobalsTest_MockMe', $mock);
 		$this->assertNull($mock->Foo());
 		$this->assertNull($mock->Bar());
 	}
 
 	function testCanBuildSpy() {
-		$spy = spy('PokitoGlobalsTest_MockMe');
-		$this->assertInstanceOf('PokitoGlobalsTest_MockMe', $spy);
+		$spy = spy('PhockitoGlobalsTest_MockMe');
+		$this->assertInstanceOf('PhockitoGlobalsTest_MockMe', $spy);
 		$this->assertEquals($spy->Foo(), 'Foo');
 		$this->assertEquals($spy->Bar(), 'Bar');
 	}
 
 	function testCanStub() {
-		$mock = mock('PokitoGlobalsTest_MockMe');
+		$mock = mock('PhockitoGlobalsTest_MockMe');
 
 		when($mock->Foo())->return(1);
 		$this->assertEquals($mock->Foo(), 1);
 	}
 
 	function testCanVerify() {
-		$mock = mock('PokitoGlobalsTest_MockMe');
+		$mock = mock('PhockitoGlobalsTest_MockMe');
 		
 		$mock->Foo();
 		verify($mock)->Foo();
