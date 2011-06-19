@@ -354,6 +354,8 @@ class Phockito_WhenBuilder {
 	protected $method;
 	protected $i;
 
+	protected $lastAction = null;
+
 	/**
 	 * Store the method and args we're stubbing
 	 */
@@ -392,12 +394,15 @@ class Phockito_WhenBuilder {
 			if (preg_match('/return/i', $called)) $action = 'return';
 			else if (preg_match('/throw/i', $called)) $action = 'throw';
 			else if (preg_match('/callback/i', $called)) $action = 'callback';
+			else if ($called == 'then' && $this->lastAction) $action = $this->lastAction;
 			else user_error("Unknown when action $called - should contain return or throw somewhere in method name", E_USER_ERROR);
 
 			Phockito::$_responses[$this->instance][$this->method][$this->i]['steps'][] = array(
 				'action' => $action,
 				'value' => $value
 			);
+
+			$this->lastAction = $action;
 		}
 
 		return $this;

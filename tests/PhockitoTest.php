@@ -180,6 +180,17 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($mock->Foo(), 'Foo');
 	}
 
+	/** @expectedException PhockitoTest_StubResponse
+	 */
+	function testCanSpecifySequenceOfValuesAndExceptionsAsResponse() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+
+		Phockito::when($mock->Foo())->return(1)->then(2)->thenThrow('PhockitoTest_StubResponse');
+		$this->assertEquals($mock->Foo(), 1);
+		$this->assertEquals($mock->Foo(), 2);
+		$mock->Foo();
+	}
+
 	/** Test validating **/
 
 	/**   Against 0 */
