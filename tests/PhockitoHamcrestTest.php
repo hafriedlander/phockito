@@ -1,7 +1,7 @@
 <?php
 
 // Include Phockito
-require_once(dirname(dirname(__FILE__)) . '/Pokito.php');
+require_once(dirname(dirname(__FILE__)) . '/Phockito.php');
 Phockito::include_hamcrest();
 
 class PhockitoHamcrestTest_MockMe {

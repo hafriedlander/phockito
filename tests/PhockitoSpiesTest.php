@@ -1,6 +1,6 @@
 <?php
 
-require_once(dirname(dirname(__FILE__)) . '/Pokito.php');
+require_once(dirname(dirname(__FILE__)) . '/Phockito.php');
 
 class PhockitoSpiesTest_MockMe {
 	function Foo() { throw new Exception('Base method Foo was called'); }

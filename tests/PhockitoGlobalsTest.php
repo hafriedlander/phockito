@@ -1,7 +1,7 @@
 <?php
 
 // Include Phockito
-require_once(dirname(dirname(__FILE__)) . '/Pokito_Globals.php');
+require_once(dirname(dirname(__FILE__)) . '/Phockito_Globals.php');
 
 class PhockitoGlobalsTest_MockMe {
 	function Foo() { return 'Foo'; }

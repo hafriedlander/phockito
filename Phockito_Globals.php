@@ -1,6 +1,6 @@
 <?php
 
-require_once(dirname(__FILE__) . '/Pokito.php');
+require_once(dirname(__FILE__) . '/Phockito.php');
 
 function mock() {
 	$args = func_get_args();
