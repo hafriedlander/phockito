@@ -85,7 +85,7 @@ print_r($spy->Bar()); // 'ZapBar'
 #### Stubbing methods more flexible
 
 In Mockito, the methods when building a stub are limited to thenReturns, thenThrows. In Phockito, you can use any method
-as long as it has 'return' or 'throw' in it, so `Poktio::when(...)->return(1)->thenReturn(2)` is fine.
+as long as it has 'return' or 'throw' in it, so `Phockito::when(...)->return(1)->thenReturn(2)` is fine.
 
 #### Verify 'times' argument changed
 
