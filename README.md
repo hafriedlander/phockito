@@ -11,7 +11,7 @@ Thanks to the developers of Mockito for the inspiration, and hamcrest-php for ma
 
 ```php
 // Create the mock
-$iterator = Phockito::mock('ArrayIterator);
+$iterator = Phockito::mock('ArrayIterator');
 
 // Use the mock object - doesn't do anything, functions return null
 $iterator->append('Test');
@@ -30,7 +30,7 @@ otherwise just throws an `Exception`
 
 ```php
 // Create the mock
-$iterator = Phockito::mock('ArrayIterator);
+$iterator = Phockito::mock('ArrayIterator');
 
 // Stub in a value
 Phockito::when($iterator->offsetGet(0))->return('first');
@@ -40,6 +40,44 @@ print_r($iterator->offsetGet(0));
 
 // Prints null, because get(999) not stubbed
 print_r($iterator->offsetGet(999));
+```
+
+Alternative API, jsMockito style
+
+```php
+// Stub in a value
+Phockito::when($iterator)->offsetGet(0)->return('first');
+```
+
+## Spies
+
+Mocks are full mocks - method calls to unstubbed function always return null, and never call the parent function.
+
+You can also create partial mocks by calling `spy` instead of `mock`. With spies, method calls to unstubbed functions
+call the parent function.
+
+Because spies are proper subclasses, this lets you stub in methods that are called by other methods in a class
+
+```php
+class A {
+	function Foo(){ return 'Foo'; }
+	function Bar(){ return $this->Foo() . 'Bar'; }
+}
+
+// Create a mock
+$mock = Phockito::mock('A');
+print_r($mock->Foo()); // 'null'
+print_r($mock->Bar()); // 'null'
+
+// Create a spy
+$spy = Phockito::spy('A');
+print_r($spy->Foo()); // 'Foo'
+print_r($spy->Bar()); // 'FooBar'
+
+// Stub a method 
+Phockito::when($spy)->Foo()->return('Zap');
+print_r($spy->Foo()); // 'Zap'
+print_r($spy->Bar()); // 'ZapBar'
 ```
 
 ## Differences from Mockito
@@ -55,6 +93,12 @@ In Mockito, the 'times' argument to verify is an object of interface Verificatio
 atLeastOnce, etc).
 
 For now we just take either an integer, or an integer followed by '+'. It's not extensible.
+
+#### Callback instead of answers
+
+In Mockito, you can return dynamic results from a stubbed method by calling thenAnswer with an instance of an object
+that has a specific method. In Phockito you call thenCallback with a `callback` argument, which gets called with the
+arguments the stubbed method was called with.
 
 #### Default arguments
 
@@ -86,7 +130,6 @@ PHP, so we always return null. TODO: Support using phpdoc @return when declared.
 
  - Mochito-specific hamcrest matchers (anyString, etc)
  - Ordered verification
- - Answers (dynamic responses for stubs)
 
 ## License
 
