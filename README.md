@@ -1,9 +1,11 @@
 # Pokito - Mockito for PHP
 
-Mocking framework based on Mockito for Java
+Mocking framework inspired by Mockito for Java
 
 Checkout [the original's website](http://mockito.org/) for the philosophy behind the API and more examples
 (although be aware that this is only a partial implementation for now)
+
+Thanks to the developers of Mockito for the inspiration, and hamcrest-php for making this easy.
 
 ## Example mocking:
 
@@ -82,13 +84,12 @@ PHP, so we always return null. TODO: Support using phpdoc @return when declared.
 
 ## TODO
 
- - Spies
  - Mochito-specific hamcrest matchers (anyString, etc)
  - Ordered verification
  - Answers (dynamic responses for stubs)
- - doXXX stubbing
 
 ## License
 
 Copyright (C) 2011 Hamish Friedlander / SilverStripe. Distributable under the same license as SilverStripe.
 
+Hamcrest-php is under it's own license - see hamcrest-php/LICENSE.txt.
