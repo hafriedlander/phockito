@@ -190,7 +190,7 @@ EOT;
 				$callparams[] = '$'.$parameter->getName();
 
 				// Turn the method arguments into a php fragment the defines a function with them, including possibly the by-reference "&" and any default
-				$defparam[] =
+				$defparams[] =
 					($parameter->isPassedByReference() ? '&' : '') .
 					'$'.$parameter->getName() .
 					($parameter->isOptional() ? '=' . var_export($parameter->getDefaultValue(), true) : '')

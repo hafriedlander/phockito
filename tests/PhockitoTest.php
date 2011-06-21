@@ -18,6 +18,7 @@ class PhockitoTest_MockSubclass extends PhockitoTest_MockMe {
 
 interface PhockitoTest_MockInterface {
 	function Foo();
+	function Bar($a);
 }
 
 /** Classes with different types of methods */
