@@ -41,6 +41,13 @@
  */
 class Phockito {
 
+	/* ** Static Configuration *
+		Feel free to change these at any time.
+	*/
+
+	/** @var bool - If true, don't warn when doubling classes with final methods, just ignore the methods. If false, throw warnings when final methods encountered */
+	public static $ignore_finals = true;
+
 	/* ** INTERNAL INTERFACES START **
 		These are declared as public so that mocks and builders can access them,
 		but they're for internal use only, not actually for consumption by the general public
@@ -132,10 +139,9 @@ class Phockito {
 	 * @param bool $partial - Should test double be a partial or a full mock
 	 * @param string $mockerClass - The name of the class to create the mock as
 	 * @param string $mockedClass - The name of the class (or interface) to create a mock of
-	 * @param bool $ignore_finals - If true, silently ignore method marked as final. If false, raise error if method marked as final encountered
 	 * @return void
 	 */
-	protected static function build_test_double($partial, $mockerClass, $mockedClass, $ignore_finals = false) {
+	protected static function build_test_double($partial, $mockerClass, $mockedClass) {
 		// Bail if we were passed a classname that doesn't exist
 		if (!class_exists($mockedClass) && !interface_exists($mockedClass)) user_error("Can't mock non-existant class $mockedClass", E_USER_ERROR);
 
@@ -172,7 +178,7 @@ EOT;
 
 			// Either skip or throw error on final methods.
 			if ($method->isFinal()) {
-				if ($ignore_finals) continue;
+				if (self::$ignore_finals) continue;
 				else user_error("Class $mockedClass has final method {$method->name}, which we can\'t mock", E_USER_WARNING);
 			}
 
@@ -206,8 +212,19 @@ EOT;
 			// What to do if there's no stubbed response
 			$failover = $partial ? "parent::{$method->name}( $callparams )" : "null";
 
+			// Constructor is handled specially. For spies, we do call the parent's constructor. For mocks we ignore
+			if ($method->name == '__construct') {
+				if ($partial) {
+					$php[] = <<<EOT
+  function __phockito_parent_construct( $defparams ){
+    parent::__construct( $callparams );
+  }
+EOT;
+				}
+			}
 			// Build an overriding method that calls Phockito::__called, and never calls the parent
-			$php[] = <<<EOT
+			else {
+				$php[] = <<<EOT
   $modifiers function {$method->name}( $defparams ){
     \$args = func_get_args();
 
@@ -220,6 +237,7 @@ EOT;
     else return $failover;
   }
 EOT;
+			}
 		}
 
 		// Close off the class definition and eval it to create the class as an extant entity.
@@ -233,12 +251,11 @@ EOT;
 	 *
 	 * @static
 	 * @param string $class - The class to mock
-	 * @param bool $ignore_finals - True if methods declared as final in the mock are silently ignored, false to throw an error
 	 * @return string - The class that acts as a Phockito mock of the passed class
 	 */
-	static function mock_class($class, $ignore_finals = false) {
+	static function mock_class($class) {
 		$mockClass = '__phockito_'.$class.'_Mock';
-		if (!class_exists($mockClass)) self::build_test_double(false, $mockClass, $class, $ignore_finals);
+		if (!class_exists($mockClass)) self::build_test_double(false, $mockClass, $class);
 
 		return $mockClass;
 	}
@@ -248,35 +265,56 @@ EOT;
 	 *
 	 * @static
 	 * @param string $class - The class to mock
-	 * @param bool $ignore_finals - True if methods declared as final in the mock are silently ignored, false to throw an error
 	 * @return Object - A mock of that class
 	 */
-	static function mock_instance($class, $ignore_finals = false) {
-		$mockClass = self::mock_class($class, $ignore_finals);
+	static function mock_instance($class) {
+		$mockClass = self::mock_class($class);
 		return new $mockClass();
 	}
 
 	/**
 	 * Aternative name for mock_instance
 	 */
-	static function mock($class, $ignore_finals = false) {
-		return self::mock_instance($class, $ignore_finals);
+	static function mock($class) {
+		return self::mock_instance($class);
 	}
 
-	static function spy_class($class, $ignore_finals = false) {
+	static function spy_class($class) {
 		$spyClass = '__phockito_'.$class.'_Spy';
-		if (!class_exists($spyClass)) self::build_test_double(true, $spyClass, $class, $ignore_finals);
+		if (!class_exists($spyClass)) self::build_test_double(true, $spyClass, $class);
 
 		return $spyClass;
 	}
 
-	static function spy_instance($class, $ignore_finals = false) {
-		$spyClass = self::spy_class($class, $ignore_finals);
-		return new $spyClass();
+	const DONT_CALL_CONSTRUCTOR = '__phockito_dont_call_constructor';
+
+	static function spy_instance($class /*, $constructor_arg_1, ... */) {
+		$spyClass = self::spy_class($class);
+		
+		$res = new $spyClass();
+
+		// Find the constructor args
+		$constructor_args = func_get_args();
+		array_shift($constructor_args);
+
+		// Call the constructor (maybe)
+		if (count($constructor_args) != 1 || $constructor_args[0] !== self::DONT_CALL_CONSTRUCTOR) {
+			$constructor = array($res, '__phockito_parent_construct');
+			if (!is_callable($constructor)) {
+				if ($constructor_args) user_error("Tried to create spy of $class with constructor args, but that $class doesn't have a constructor defined", E_USER_ERROR);
+			}
+			else {
+				call_user_func_array($constructor, $constructor_args);
+			}
+		}
+		
+		// And done
+		return $res;
 	}
 
-	static function spy($class, $ignore_finals = false) {
-		return self::spy_instance($class, $ignore_finals);
+	static function spy() {
+		$args = func_get_args();
+		return call_user_func_array(array(__CLASS__, 'spy_instance'), $args);
 	}
 
 	/**
