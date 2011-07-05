@@ -48,6 +48,9 @@ class Phockito {
 	/** @var bool - If true, don't warn when doubling classes with final methods, just ignore the methods. If false, throw warnings when final methods encountered */
 	public static $ignore_finals = true;
 
+	/** @var string - Class name of a class with a static "register_double" method that will be called with any double to inject into some other type tracking system */
+	public static $type_registrar = null;
+
 	/* ** INTERNAL INTERFACES START **
 		These are declared as public so that mocks and builders can access them,
 		but they're for internal use only, not actually for consumption by the general public
@@ -243,6 +246,10 @@ EOT;
 		// Close off the class definition and eval it to create the class as an extant entity.
 		$php[] = '}';
 		eval(implode("\n\n", $php));
+
+		// And if we've been given a type registrar, call it
+		$type_registrar = self::$type_registrar;
+		if ($type_registrar) $type_registrar::register_double($mockerClass, $mockedClass, $reflect->isInterface());
 	}
 
 	/**
