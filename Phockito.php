@@ -507,8 +507,17 @@ class Phockito_VerifyBuilder {
 			if ($count == $this->times) return;
 		}
 
+		$message  = "Failed asserting that method $called called {$this->times} times - actually called $count times.\n";
+		$message .= "Calls:\n";
+
+		foreach (Phockito::$_call_list as $call) {
+			if ($call['instance'] == $this->instance && $call['method'] == $called) {
+				$message .= print_r($call['args'], true);
+			}
+		}
+
 		$exceptionClass = self::$exception_class;
-		throw new $exceptionClass("Failed asserting that method $called called {$this->times} times");
+		throw new $exceptionClass($message);
 	}
 }
 
