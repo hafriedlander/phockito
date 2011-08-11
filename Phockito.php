@@ -213,7 +213,7 @@ EOT;
 			$defparams = implode(', ', $defparams); $callparams = implode(', ', $callparams);
 
 			// What to do if there's no stubbed response
-			$failover = $partial ? "parent::{$method->name}( $callparams )" : "null";
+			$failover = ($partial && !$method->isAbstract()) ? "parent::{$method->name}( $callparams )" : "null";
 
 			// Constructor is handled specially. For spies, we do call the parent's constructor. For mocks we ignore
 			if ($method->name == '__construct') {
