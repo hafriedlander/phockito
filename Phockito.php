@@ -76,6 +76,12 @@ class Phockito {
 	public static $_defaults = array();
 
 	/**
+	 * Records whether a given class is an interface, to avoid repeatedly generating reflection objects just to re-call type registrar
+	 * @var array
+	 */
+	public static $_is_interface = array();
+
+	/**
 	 * Checks if the two argument sets (passed as arrays) match. Simple serialized check for now, to be replaced by
 	 * something that can handle anyString etc matchers later
 	 */
@@ -156,6 +162,8 @@ class Phockito {
 		
 		// And record the defaults at the same time
 		self::$_defaults[$mockedClass] = array();
+		// And whether it's an interface
+		self::$_is_interface[$mockedClass] = $reflect->isInterface();
 
 		// The only difference between mocking a class or an interface is how the mocking class extends from the mocked
 		$extends = $reflect->isInterface() ? 'implements' : 'extends';
@@ -246,10 +254,6 @@ EOT;
 		// Close off the class definition and eval it to create the class as an extant entity.
 		$php[] = '}';
 		eval(implode("\n\n", $php));
-
-		// And if we've been given a type registrar, call it
-		$type_registrar = self::$type_registrar;
-		if ($type_registrar) $type_registrar::register_double($mockerClass, $mockedClass, $reflect->isInterface());
 	}
 
 	/**
@@ -263,6 +267,10 @@ EOT;
 	static function mock_class($class) {
 		$mockClass = '__phockito_'.$class.'_Mock';
 		if (!class_exists($mockClass)) self::build_test_double(false, $mockClass, $class);
+
+		// If we've been given a type registrar, call it (we need to do this even if class exists, since PHPUnit resets globals, possibly de-registering between tests)
+		$type_registrar = self::$type_registrar;
+		if ($type_registrar) $type_registrar::register_double($mockClass, $class, self::$_is_interface[$class]);
 
 		return $mockClass;
 	}
@@ -289,6 +297,10 @@ EOT;
 	static function spy_class($class) {
 		$spyClass = '__phockito_'.$class.'_Spy';
 		if (!class_exists($spyClass)) self::build_test_double(true, $spyClass, $class);
+
+		// If we've been given a type registrar, call it (we need to do this even if class exists, since PHPUnit resets globals, possibly de-registering between tests)
+		$type_registrar = self::$type_registrar;
+		if ($type_registrar) $type_registrar::register_double($spyClass, $class, self::$_is_interface[$class]);
 
 		return $spyClass;
 	}

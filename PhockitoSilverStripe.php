@@ -4,7 +4,7 @@ class PhockitoSilverStripe {
 
 	static function register_double($double, $of, $isDoubleOfInterface = false) {
 		global $_ALL_CLASSES;
-		if ($_ALL_CLASSES && is_array($_ALL_CLASSES)) {
+		if ($_ALL_CLASSES && is_array($_ALL_CLASSES) && !isset($_ALL_CLASSES['exists'][$double])) {
 
 			// Mark as exists
 			$_ALL_CLASSES['exists'][$double] = $double;
