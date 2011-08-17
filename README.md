@@ -80,6 +80,45 @@ print_r($spy->Foo()); // 'Zap'
 print_r($spy->Bar()); // 'ZapBar'
 ```
 
+## Argument matching
+
+Phockito allows the use of [Hamcrest](http://code.google.com/p/hamcrest/) matchers on any argument. Hamcrest is a library of "matching functions" that, given a value, return true if that value
+matches some rule.
+
+Hamcrest matchers are not included by default, so the first step is to call `Phockito::include_hamcrest();` immediately after including Phockito. 
+Note that this will import the Hamcrest matchers as global functions - passing false as an argument will keep your namespace clean by making all matchers only available as static methods of `Hamcrest` (at the expense of worse looking test code).
+
+Once included you can pass a hamcrest matcher as an argument in your when or verify rule, eg:
+
+```php
+class A {
+	function Foo($a){ }
+}
+
+$stub = Phockito::mock('A');
+Phockito::when($stub)->Foo(anything())->return('Zap');
+```
+
+Some common hamcrest matchers:
+
+- Core
+	* `anything` - always matches, useful if you don't care what the object under test is
+- Logical
+	* `allOf` - matches if all matchers match, short circuits (like PHP &&)
+	* `anyOf` - matches if any matchers match, short circuits (like PHP ||)
+	* `not` - matches if the wrapped matcher doesn't match and vice versa
+- Object
+	* `equalTo` - test object equality using the == operator
+	* `anInstanceOf` - test type
+	* `notNullValue`, `nullValue` - test for null
+- Number
+	* `closeTo` - test floating point values are close to a given value
+	* `greaterThan`, `greaterThanOrEqualTo`, `lessThan`, `lessThanOrEqualTo` - test ordering
+- Text
+	* `equalToIgnoringCase` - test string equality ignoring case
+	* `equalToIgnoringWhiteSpace` - test string equality ignoring differences in runs of whitespace
+	* `containsString`, `endsWith`, `startsWith` - test string matching
+
 ## Differences from Mockito
 
 #### Stubbing methods more flexible
