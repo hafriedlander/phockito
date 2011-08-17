@@ -370,14 +370,17 @@ EOT;
 	 * @static
 	 * @param Phockito_Mock $mock - The mock instance to reset
 	 */
-	static function reset($mock) {
+	static function reset($mock, $method = null) {
 		// Get the instance ID. Only resets instance-specific info ATM
 		$instance = $mock->__phockito_instanceid;
+		
 		// Remove any stored returns
-		unset(self::$_responses[$instance]);
+		if ($method) unset(self::$_responses[$instance][$method]);
+		else unset(self::$_responses[$instance]);
+		
 		// Remove all call history
 		foreach (self::$_call_list as $i => $call) {
-			if ($call['instance'] == $instance) array_splice(self::$_call_list, $i, 1);
+			if ($call['instance'] == $instance && ($method == null || $call['method'] == $method)) array_splice(self::$_call_list, $i, 1);
 		}
 	}
 
