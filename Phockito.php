@@ -86,17 +86,27 @@ class Phockito {
 	 * something that can handle anyString etc matchers later
 	 */
 	public static function _arguments_match($mockclass, $method, $a, $b) {
-		$defaults = self::$_defaults[$mockclass][$method]; $a = $a + $defaults; $b = $b + $defaults;
-		
+		// See if there are any defaults for the given method
+		if (isset(self::$_defaults[$mockclass][$method])) {
+			// If so, get them
+			$defaults = self::$_defaults[$mockclass][$method];
+			// And merge them with the passed args
+			$a = $a + $defaults; $b = $b + $defaults;
+		}
+
+		// If two argument arrays are different lengths, automatic fail
 		if (count($a) != count($b)) return false;
-		
+
+		// Step through each item
 		$i = count($a);
 		while($i--) {
 			$u = $a[$i]; $v = $b[$i];
-			
+
+			// If the argument in $a is a hamcrest matcher, call match on it. WONTFIX: Can't check if function was passed a hamcrest matcher
 			if (interface_exists('Hamcrest_Matcher') && $u instanceof Hamcrest_Matcher) {
 				if (!$u->matches($v)) return false;
 			}
+			// Otherwise check for equality by checking the equality of the serialized version
 			else {
 				if (serialize($u) != serialize($v)) return false;
 			}
@@ -233,6 +243,19 @@ EOT;
 EOT;
 				}
 			}
+			elseif ($method->name == '__call') {
+				// Add a __call method to catch any calls to undefined functions
+				$failover = $partial ? "parent::__call(\$name, \$args)" : "null";
+
+				$php[] = <<<EOT
+  function __call(\$name, \$args) {
+    \$response = Phockito::__called('$mockedClass', \$this->__phockito_instanceid, \$name, \$args);
+
+    if (\$response) return Phockito::__perform_response(\$response, \$args);
+    else return $failover;
+  }
+EOT;
+			}
 			// Build an overriding method that calls Phockito::__called, and never calls the parent
 			else {
 				$php[] = <<<EOT
@@ -253,6 +276,7 @@ EOT;
 
 		// Close off the class definition and eval it to create the class as an extant entity.
 		$php[] = '}';
+
 		eval(implode("\n\n", $php));
 	}
 
