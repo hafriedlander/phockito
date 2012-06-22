@@ -82,6 +82,13 @@ class Phockito {
 	public static $_is_interface = array();
 
 	/**
+	 * Imports to include in mock with 'use' keyword.
+	 *
+	 * @var array
+	 */
+	private static $imports = array();
+
+	/**
 	 * Checks if the two argument sets (passed as arrays) match. Simple serialized check for now, to be replaced by
 	 * something that can handle anyString etc matchers later
 	 */
@@ -161,10 +168,9 @@ class Phockito {
 	 * @return void
 	 */
 	protected static function build_test_double($partial, $mockerClass, $mockedClass) {
+		self::$imports = array();
 		$testDoubleFullClass = new FullClass($mockerClass);
 		$testDoubleClass = $testDoubleFullClass->getClass();
-		$testDoubleNamespace = $testDoubleFullClass->getNamespace();
-		$testDoubleNamespaceString = empty($testDoubleNamespace) ? "" : "namespace $testDoubleNamespace;";
 
 		// Bail if we were passed a classname that doesn't exist
 		if (!class_exists($mockedClass) && !interface_exists($mockedClass)) user_error("Can't mock non-existant class $mockedClass", E_USER_ERROR);
@@ -187,7 +193,6 @@ class Phockito {
 
 		// Build the class opening stanza, including giving any instance a unique string ID
 		$php[] = <<<EOT
-$testDoubleNamespaceString
 class $testDoubleClass $extends $mockedClass $marker {
 
   public \$__phockito_class;
@@ -201,6 +206,7 @@ EOT;
 
 		// Step through every method declared on the object
 		foreach ($reflect->getMethods() as $method) {
+			$method instanceof ReflectionMethod;
 			// Skip private methods. They shouldn't ever be called anyway
 			if ($method->isPrivate()) continue;
 
@@ -220,13 +226,13 @@ EOT;
 			self::$_defaults[$mockedClass][$method->name] = array();
 
 			foreach ($method->getParameters() as $i => $parameter) {
+				$parameterString = self::getParameterAsString($parameter);
 				// Turn the method arguments into a php fragment that calls a function with them
-				$callparams[] = '$'.$parameter->getName();
+				$callparams[] = $parameterString;
 
 				// Turn the method arguments into a php fragment the defines a function with them, including possibly the by-reference "&" and any default
 				$defparams[] =
-					($parameter->isPassedByReference() ? '&' : '') .
-					'$'.$parameter->getName() .
+					$parameterString .
 					($parameter->isOptional() ? '=' . var_export($parameter->getDefaultValue(), true) : '')
 				;
 
@@ -283,8 +289,43 @@ EOT;
 
 		// Close off the class definition and eval it to create the class as an extant entity.
 		$php[] = '}';
+
+		$testDoubleImports = implode(PHP_EOL, self::$imports);
+		$testDoubleNamespace = $testDoubleFullClass->getNamespace();
+		$testDoubleNamespaceString = empty($testDoubleNamespace) ? "" : "namespace $testDoubleNamespace;";
+
 		$implodedPhp = implode("\n\n", $php);
+		$implodedPhp = $testDoubleNamespaceString . PHP_EOL . $testDoubleImports . PHP_EOL . $implodedPhp;
 		eval($implodedPhp);
+	}
+
+	/**
+	 * @param ReflectionParameter $parameter
+	 * @return string
+	 */
+	private static function getParameterAsString(ReflectionParameter $parameter) {
+		$typeHint = "";
+		$class = $parameter->getClass();
+		if ($class instanceof ReflectionClass) {
+			$typeHint = $class->getShortName() . " ";
+			self::addImport($class);
+		} else if ($parameter->isArray()) {
+			$typeHint = "array";
+		}
+		$prefix = $parameter->isPassedByReference() ? "&$" : "$";
+		$name = $parameter->getName();
+		return $typeHint . $prefix . $name;
+	}
+
+	/**
+	 * @param ReflectionClass $class
+	 */
+	private static function addImport(ReflectionClass $class) {
+		$longName = $class->getName();
+		$import = "use $longName;";
+		if (!in_array($import, self::$imports)) {
+			self::$imports[] = $import;
+		}
 	}
 
 	/**

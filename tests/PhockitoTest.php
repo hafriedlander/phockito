@@ -302,5 +302,13 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		// then
 		self::assertEquals($mockedDescription, $actual);
 	}
+	
+	/**
+	 * @test
+	 */
+	public function shouldMockTypehintedClass() {
+		require_once 'TypehintedClass.php';
+		Phockito::mock('\\org\\phockito\\tests\\TypehintedClass');
+	}
 
 }
