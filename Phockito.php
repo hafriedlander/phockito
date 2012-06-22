@@ -82,6 +82,13 @@ class Phockito {
 	public static $_is_interface = array();
 
 	/**
+	 * Imports to include in mock with 'use' keyword.
+	 *
+	 * @var array
+	 */
+	private static $imports = array();
+
+	/**
 	 * Checks if the two argument sets (passed as arrays) match. Simple serialized check for now, to be replaced by
 	 * something that can handle anyString etc matchers later
 	 */
@@ -111,7 +118,7 @@ class Phockito {
 				if (serialize($u) != serialize($v)) return false;
 			}
 		}
-		
+
 		return true;
 	}
 
@@ -161,6 +168,10 @@ class Phockito {
 	 * @return void
 	 */
 	protected static function build_test_double($partial, $mockerClass, $mockedClass) {
+		self::$imports = array();
+		$testDoubleFullClass = new FullClass($mockerClass);
+		$testDoubleClass = $testDoubleFullClass->getClass();
+
 		// Bail if we were passed a classname that doesn't exist
 		if (!class_exists($mockedClass) && !interface_exists($mockedClass)) user_error("Can't mock non-existant class $mockedClass", E_USER_ERROR);
 
@@ -169,31 +180,33 @@ class Phockito {
 
 		// Build up an array of php fragments that make the mocking class definition
 		$php = array();
-		
+
 		// And record the defaults at the same time
 		self::$_defaults[$mockedClass] = array();
 		// And whether it's an interface
 		self::$_is_interface[$mockedClass] = $reflect->isInterface();
+		$escapedMockedClass = addslashes($mockedClass);
 
 		// The only difference between mocking a class or an interface is how the mocking class extends from the mocked
 		$extends = $reflect->isInterface() ? 'implements' : 'extends';
-		$marker = $reflect->isInterface() ? ', Phockito_MockMarker' : 'implements Phockito_MockMarker';
+		$marker = $reflect->isInterface() ? ', \\Phockito_MockMarker' : 'implements \\Phockito_MockMarker';
 
 		// Build the class opening stanza, including giving any instance a unique string ID
 		$php[] = <<<EOT
-class $mockerClass $extends $mockedClass $marker {
+class $testDoubleClass $extends $mockedClass $marker {
 
   public \$__phockito_class;
   public \$__phockito_instanceid;
 
   function __construct() {
-    \$this->__phockito_class = '$mockedClass';
-    \$this->__phockito_instanceid = '$mockedClass:'.(++Phockito::\$_instanceid_counter);
+    \$this->__phockito_class = '$escapedMockedClass';
+    \$this->__phockito_instanceid = '$escapedMockedClass:'.(++\\Phockito::\$_instanceid_counter);
   }
 EOT;
 
 		// Step through every method declared on the object
 		foreach ($reflect->getMethods() as $method) {
+			$method instanceof ReflectionMethod;
 			// Skip private methods. They shouldn't ever be called anyway
 			if ($method->isPrivate()) continue;
 
@@ -211,15 +224,15 @@ EOT;
 
 			// Array of defaults (sparse numeric)
 			self::$_defaults[$mockedClass][$method->name] = array();
-			
+
 			foreach ($method->getParameters() as $i => $parameter) {
+				$parameterString = self::getParameterAsString($parameter);
 				// Turn the method arguments into a php fragment that calls a function with them
-				$callparams[] = '$'.$parameter->getName();
+				$callparams[] = $parameterString;
 
 				// Turn the method arguments into a php fragment the defines a function with them, including possibly the by-reference "&" and any default
 				$defparams[] =
-					($parameter->isPassedByReference() ? '&' : '') .
-					'$'.$parameter->getName() .
+					$parameterString .
 					($parameter->isOptional() ? '=' . var_export($parameter->getDefaultValue(), true) : '')
 				;
 
@@ -249,9 +262,9 @@ EOT;
 
 				$php[] = <<<EOT
   function __call(\$name, \$args) {
-    \$response = Phockito::__called('$mockedClass', \$this->__phockito_instanceid, \$name, \$args);
+    \$response = \\Phockito::__called('$mockedClass', \$this->__phockito_instanceid, \$name, \$args);
 
-    if (\$response) return Phockito::__perform_response(\$response, \$args);
+    if (\$response) return \\Phockito::__perform_response(\$response, \$args);
     else return $failover;
   }
 EOT;
@@ -265,9 +278,9 @@ EOT;
     \$backtrace = debug_backtrace();
     \$instance = \$backtrace[0]['type'] == '::' ? '::$mockedClass' : \$this->__phockito_instanceid;
 
-    \$response = Phockito::__called('$mockedClass', \$instance, '{$method->name}', \$args);
-  
-    if (\$response) return Phockito::__perform_response(\$response, \$args);
+    \$response = \\Phockito::__called('$mockedClass', \$instance, '{$method->name}', \$args);
+
+    if (\$response) return \\Phockito::__perform_response(\$response, \$args);
     else return $failover;
   }
 EOT;
@@ -277,7 +290,42 @@ EOT;
 		// Close off the class definition and eval it to create the class as an extant entity.
 		$php[] = '}';
 
-		eval(implode("\n\n", $php));
+		$testDoubleImports = implode(PHP_EOL, self::$imports);
+		$testDoubleNamespace = $testDoubleFullClass->getNamespace();
+		$testDoubleNamespaceString = empty($testDoubleNamespace) ? "" : "namespace $testDoubleNamespace;";
+
+		$implodedPhp = implode("\n\n", $php);
+		$implodedPhp = $testDoubleNamespaceString . PHP_EOL . $testDoubleImports . PHP_EOL . $implodedPhp;
+		eval($implodedPhp);
+	}
+
+	/**
+	 * @param ReflectionParameter $parameter
+	 * @return string
+	 */
+	private static function getParameterAsString(ReflectionParameter $parameter) {
+		$typeHint = "";
+		$class = $parameter->getClass();
+		if ($class instanceof ReflectionClass) {
+			$typeHint = $class->getShortName() . " ";
+			self::addImport($class);
+		} else if ($parameter->isArray()) {
+			$typeHint = "array";
+		}
+		$prefix = $parameter->isPassedByReference() ? "&$" : "$";
+		$name = $parameter->getName();
+		return $typeHint . $prefix . $name;
+	}
+
+	/**
+	 * @param ReflectionClass $class
+	 */
+	private static function addImport(ReflectionClass $class) {
+		$longName = $class->getName();
+		$import = "use $longName;";
+		if (!in_array($import, self::$imports)) {
+			self::$imports[] = $import;
+		}
 	}
 
 	/**
@@ -333,7 +381,7 @@ EOT;
 
 	static function spy_instance($class /*, $constructor_arg_1, ... */) {
 		$spyClass = self::spy_class($class);
-		
+
 		$res = new $spyClass();
 
 		// Find the constructor args
@@ -350,7 +398,7 @@ EOT;
 				call_user_func_array($constructor, $constructor_args);
 			}
 		}
-		
+
 		// And done
 		return $res;
 	}
@@ -397,11 +445,11 @@ EOT;
 	static function reset($mock, $method = null) {
 		// Get the instance ID. Only resets instance-specific info ATM
 		$instance = $mock->__phockito_instanceid;
-		
+
 		// Remove any stored returns
 		if ($method) unset(self::$_responses[$instance][$method]);
 		else unset(self::$_responses[$instance]);
-		
+
 		// Remove all call history
 		foreach (self::$_call_list as $i => $call) {
 			if ($call['instance'] == $instance && ($method == null || $call['method'] == $method)) array_splice(self::$_call_list, $i, 1);
@@ -415,7 +463,7 @@ EOT;
 	 */
 	static function include_hamcrest($include_globals = true) {
 		set_include_path(get_include_path().PATH_SEPARATOR.dirname(__FILE__).'/hamcrest-php/hamcrest');
-		
+
 		if ($include_globals) require_once('Hamcrest.php');
 		else require_once('Hamcrest/Matchers.php');
 	}
@@ -548,3 +596,43 @@ class Phockito_VerifyBuilder {
 	}
 }
 
+/**
+ * Represents fully qualified PHP class.
+ */
+class FullClass {
+
+	/**
+	 * @var string
+	 */
+	private $class;
+
+	/**
+	 * @var string
+	 */
+	private $namespace;
+
+	/**
+	 * @param string $fullyQualifiedClassName
+	 */
+	public function __construct($fullyQualifiedClassName) {
+		$namespaceDelimiter = "\\";
+		$parts = explode($namespaceDelimiter, $fullyQualifiedClassName);
+		$this->class = array_pop($parts);
+		$this->namespace = implode($namespaceDelimiter, $parts);
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getClass() {
+		return $this->class;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getNamespace() {
+		return $this->namespace;
+	}
+
+}

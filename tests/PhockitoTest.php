@@ -286,5 +286,29 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 	}
 
 
+	/**
+	 * @test
+	 */
+	public function shouldMockNamespacedClass() {
+		// given
+		require_once 'NamespacedClass.php';
+		$mockedDescription = "This is a namespaced mock.";
+		$mock = Phockito::mock('\\org\\phockito\\tests\\NamespacedClass');
+		Phockito::when($mock->getDescription())->return($mockedDescription);
+
+		// when
+		$actual = $mock->getDescription();
+
+		// then
+		self::assertEquals($mockedDescription, $actual);
+	}
+	
+	/**
+	 * @test
+	 */
+	public function shouldMockTypehintedClass() {
+		require_once 'TypehintedClass.php';
+		Phockito::mock('\\org\\phockito\\tests\\TypehintedClass');
+	}
 
 }
