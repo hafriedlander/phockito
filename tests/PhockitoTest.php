@@ -192,6 +192,13 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$mock->Foo();
 	}
 
+	function testCanSpecificReturnValueForUndefinedFunction() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::when($mock->Quux())->return('Quux');
+
+		$this->assertEquals('Quux', $mock->Quux());
+	}
+
 	/** Test validating **/
 
 	/**   Against 0 */
@@ -284,7 +291,5 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$mock->Foo();
 		Phockito::verify($mock, '2+')->Foo();
 	}
-
-
 
 }

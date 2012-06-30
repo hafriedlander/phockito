@@ -226,6 +226,9 @@ EOT;
 		// And whether it's an interface
 		self::$_is_interface[$mockedClass] = $reflect->isInterface();
 
+		// Track if the mocked class has a __call method defined
+		$has__call = false;
+
 		// Step through every method declared on the object
 		foreach ($reflect->getMethods() as $method) {
 			// Skip private methods. They shouldn't ever be called anyway
@@ -284,17 +287,7 @@ EOT;
 				}
 			}
 			elseif ($method->name == '__call') {
-				// Add a __call method to catch any calls to undefined functions
-				$failover = $partial ? "parent::__call(\$name, \$args)" : "null";
-
-				$php[] = <<<EOT
-  function __call(\$name, \$args) {
-    \$response = {$phockito}::__called($mockedClassString, \$this->__phockito_instanceid, \$name, \$args);
-
-    if (\$response) return {$phockito}::__perform_response(\$response, \$args);
-    else return $failover;
-  }
-EOT;
+				$has__call = true;
 			}
 			// Build an overriding method that calls Phockito::__called, and never calls the parent
 			else {
@@ -313,6 +306,18 @@ EOT;
 EOT;
 			}
 		}
+
+		// Add a __call method to catch any calls to undefined functions
+		$failover = ($partial && $has__call) ? "parent::__call(\$name, \$args)" : "null";
+
+		$php[] = <<<EOT
+  function __call(\$name, \$args) {
+    \$response = {$phockito}::__called($mockedClassString, \$this->__phockito_instanceid, \$name, \$args);
+
+    if (\$response) return {$phockito}::__perform_response(\$response, \$args);
+    else return $failover;
+  }
+EOT;
 
 		// Close off the class definition and eval it to create the class as an extant entity.
 		$php[] = '}';
