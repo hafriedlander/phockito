@@ -226,8 +226,8 @@ EOT;
 		// And whether it's an interface
 		self::$_is_interface[$mockedClass] = $reflect->isInterface();
 
-		// Track if the mocked class has a __call method defined
-		$has__call = false;
+		// Track if the mocked class defines either of the __call and/or __toString magic methods
+		$has__call = $has__toString = false;
 
 		// Step through every method declared on the object
 		foreach ($reflect->getMethods() as $method) {
@@ -289,6 +289,9 @@ EOT;
 			elseif ($method->name == '__call') {
 				$has__call = true;
 			}
+			elseif ($method->name == '__toString') {
+				$has__toString = true;
+			}
 			// Build an overriding method that calls Phockito::__called, and never calls the parent
 			else {
 				$php[] = <<<EOT
@@ -307,12 +310,29 @@ EOT;
 			}
 		}
 
-		// Add a __call method to catch any calls to undefined functions
+		// Always add a __call method to catch any calls to undefined functions
 		$failover = ($partial && $has__call) ? "parent::__call(\$name, \$args)" : "null";
 
 		$php[] = <<<EOT
   function __call(\$name, \$args) {
     \$response = {$phockito}::__called($mockedClassString, \$this->__phockito_instanceid, \$name, \$args);
+
+    if (\$response) return {$phockito}::__perform_response(\$response, \$args);
+    else return $failover;
+  }
+EOT;
+
+		// Always add a __toString method
+		if ($partial) {
+			if ($has__toString) $failover = "parent::__toString()";
+			else $failover = "user_error('Object of class '.$mockedClassString.' could not be converted to string', E_USER_ERROR)";
+		}
+		else $failover = "''";
+
+		$php[] = <<<EOT
+  function __toString() {
+    \$args = array();
+    \$response = {$phockito}::__called($mockedClassString, \$this->__phockito_instanceid, "__toString", \$args);
 
     if (\$response) return {$phockito}::__perform_response(\$response, \$args);
     else return $failover;
