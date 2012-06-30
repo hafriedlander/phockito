@@ -250,8 +250,14 @@ EOT;
 				// Turn the method arguments into a php fragment that calls a function with them
 				$callparams[] = '$'.$parameter->getName();
 
+				// Get the type hint of the parameter
+				if ($parameter->isArray()) $type = 'array ';
+				else if ($parameterClass = $parameter->getClass()) $type = '\\'.$parameterClass->getName().' ';
+				else $type = '';
+
 				// Turn the method arguments into a php fragment the defines a function with them, including possibly the by-reference "&" and any default
 				$defparams[] =
+					$type .
 					($parameter->isPassedByReference() ? '&' : '') .
 					'$'.$parameter->getName() .
 					($parameter->isOptional() ? '=' . var_export($parameter->getDefaultValue(), true) : '')
@@ -310,6 +316,9 @@ EOT;
 
 		// Close off the class definition and eval it to create the class as an extant entity.
 		$php[] = '}';
+
+		// Debug: uncomment to spit out the code we're about to compile to stdout
+		// echo "\n" . implode("\n\n", $php) . "\n";
 
 		eval(implode("\n\n", $php));
 		return $mockerClass;
