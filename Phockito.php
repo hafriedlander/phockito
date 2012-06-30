@@ -81,6 +81,13 @@ class Phockito {
 	 */
 	public static $_is_interface = array();
 
+	/*
+	 * Should we attempt to support namespaces? Is PHP >= 5.3, basically
+	 */
+	public static function _has_namespaces() {
+		return version_compare(PHP_VERSION, '5.3.0', '>=');
+	}
+
 	/**
 	 * Checks if the two argument sets (passed as arrays) match. Simple serialized check for now, to be replaced by
 	 * something that can handle anyString etc matchers later
@@ -160,37 +167,64 @@ class Phockito {
 	 * @param string $mockedClass - The name of the class (or interface) to create a mock of
 	 * @return void
 	 */
-	protected static function build_test_double($partial, $mockerClass, $mockedClass) {
+	protected static function build_test_double($partial, $mockedClass) {
 		// Bail if we were passed a classname that doesn't exist
 		if (!class_exists($mockedClass) && !interface_exists($mockedClass)) user_error("Can't mock non-existant class $mockedClass", E_USER_ERROR);
+
+		// How to get a reference to the Phockito class itself
+		$phockito = self::_has_namespaces() ? '\\Phockito' : 'Phockito';
 
 		// Reflect on the mocked class
 		$reflect = new ReflectionClass($mockedClass);
 
 		// Build up an array of php fragments that make the mocking class definition
 		$php = array();
-		
-		// And record the defaults at the same time
-		self::$_defaults[$mockedClass] = array();
-		// And whether it's an interface
-		self::$_is_interface[$mockedClass] = $reflect->isInterface();
+
+		// Get the namespace & the shortname of the mocked class
+		if (self::_has_namespaces()) {
+			$mockedNamespace = $reflect->getNamespaceName();
+			$mockedShortName = $reflect->getShortName();
+		}
+		else {
+			$mockedNamespace = '';
+			$mockedShortName = $mockedClass;
+		}
+
+		// Build the short name of the mocker class based on the mocked classes shortname
+		$mockerShortName = '__phockito_'.$mockedShortName.($partial ? '_Spy' : '_Mock');
+		// And build the full class name of the mocker by prepending the namespace if appropriate
+		$mockerClass = (self::_has_namespaces() ? $mockedNamespace.'\\' : '') . $mockerShortName;
+
+		// If we've already built this test double, just return it
+		if (class_exists($mockerClass)) return $mockerClass;
+
+		// If the mocked class is in a namespace, the test double goes in the same namespace
+		$namespaceDeclaration = $mockedNamespace ? "namespace $mockedNamespace;" : '';
 
 		// The only difference between mocking a class or an interface is how the mocking class extends from the mocked
 		$extends = $reflect->isInterface() ? 'implements' : 'extends';
-		$marker = $reflect->isInterface() ? ', Phockito_MockMarker' : 'implements Phockito_MockMarker';
+		$marker = $reflect->isInterface() ? ", {$phockito}_MockMarker" : "implements {$phockito}_MockMarker";
 
-		// Build the class opening stanza, including giving any instance a unique string ID
+		// When injecting the class as a string, need to escape the "\" character.
+		$mockedClassString = "'".str_replace('\\', '\\\\', $mockedClass)."'";
+
+		// Add opening class stanza
 		$php[] = <<<EOT
-class $mockerClass $extends $mockedClass $marker {
-
+$namespaceDeclaration
+class $mockerShortName $extends $mockedShortName $marker {
   public \$__phockito_class;
   public \$__phockito_instanceid;
 
   function __construct() {
-    \$this->__phockito_class = '$mockedClass';
-    \$this->__phockito_instanceid = '$mockedClass:'.(++Phockito::\$_instanceid_counter);
+    \$this->__phockito_class = $mockedClassString;
+    \$this->__phockito_instanceid = $mockedClassString.':'.(++{$phockito}::\$_instanceid_counter);
   }
 EOT;
+
+		// And record the defaults at the same time
+		self::$_defaults[$mockedClass] = array();
+		// And whether it's an interface
+		self::$_is_interface[$mockedClass] = $reflect->isInterface();
 
 		// Step through every method declared on the object
 		foreach ($reflect->getMethods() as $method) {
@@ -249,9 +283,9 @@ EOT;
 
 				$php[] = <<<EOT
   function __call(\$name, \$args) {
-    \$response = Phockito::__called('$mockedClass', \$this->__phockito_instanceid, \$name, \$args);
+    \$response = {$phockito}::__called($mockedClassString, \$this->__phockito_instanceid, \$name, \$args);
 
-    if (\$response) return Phockito::__perform_response(\$response, \$args);
+    if (\$response) return {$phockito}::__perform_response(\$response, \$args);
     else return $failover;
   }
 EOT;
@@ -263,11 +297,11 @@ EOT;
     \$args = func_get_args();
 
     \$backtrace = debug_backtrace();
-    \$instance = \$backtrace[0]['type'] == '::' ? '::$mockedClass' : \$this->__phockito_instanceid;
+    \$instance = \$backtrace[0]['type'] == '::' ? ('::'.$mockedClassString) : \$this->__phockito_instanceid;
 
-    \$response = Phockito::__called('$mockedClass', \$instance, '{$method->name}', \$args);
+    \$response = {$phockito}::__called($mockedClassString, \$instance, '{$method->name}', \$args);
   
-    if (\$response) return Phockito::__perform_response(\$response, \$args);
+    if (\$response) return {$phockito}::__perform_response(\$response, \$args);
     else return $failover;
   }
 EOT;
@@ -278,6 +312,7 @@ EOT;
 		$php[] = '}';
 
 		eval(implode("\n\n", $php));
+		return $mockerClass;
 	}
 
 	/**
@@ -289,8 +324,7 @@ EOT;
 	 * @return string - The class that acts as a Phockito mock of the passed class
 	 */
 	static function mock_class($class) {
-		$mockClass = '__phockito_'.$class.'_Mock';
-		if (!class_exists($mockClass)) self::build_test_double(false, $mockClass, $class);
+		$mockClass = self::build_test_double(false, $class);
 
 		// If we've been given a type registrar, call it (we need to do this even if class exists, since PHPUnit resets globals, possibly de-registering between tests)
 		$type_registrar = self::$type_registrar;
@@ -319,8 +353,7 @@ EOT;
 	}
 
 	static function spy_class($class) {
-		$spyClass = '__phockito_'.$class.'_Spy';
-		if (!class_exists($spyClass)) self::build_test_double(true, $spyClass, $class);
+		$spyClass = self::build_test_double(true, $class);
 
 		// If we've been given a type registrar, call it (we need to do this even if class exists, since PHPUnit resets globals, possibly de-registering between tests)
 		$type_registrar = self::$type_registrar;
