@@ -3,6 +3,12 @@
 // Include Phockito
 require_once(dirname(dirname(__FILE__)) . '/Phockito.php');
 
+spl_autoload_register(function ($class) {
+	if (0 === strncmp($class, Phockito::MOCK_PREFIX, strlen(Phockito::MOCK_PREFIX))) {
+		throw new RuntimeException('Autoload attempted on a phockito mock class');
+	}
+}, true);
+
 /** Base class to mock */
 
 class PhockitoTest_MockMe {
