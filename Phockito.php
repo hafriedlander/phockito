@@ -40,6 +40,7 @@
  * starting with an "_" is for internal consumption only
  */
 class Phockito {
+	const MOCK_PREFIX = '__phockito_';
 
 	/* ** Static Configuration *
 		Feel free to change these at any time.
@@ -191,12 +192,12 @@ class Phockito {
 		}
 
 		// Build the short name of the mocker class based on the mocked classes shortname
-		$mockerShortName = '__phockito_'.$mockedShortName.($partial ? '_Spy' : '_Mock');
+		$mockerShortName = self::MOCK_PREFIX.$mockedShortName.($partial ? '_Spy' : '_Mock');
 		// And build the full class name of the mocker by prepending the namespace if appropriate
 		$mockerClass = (self::_has_namespaces() ? $mockedNamespace.'\\' : '') . $mockerShortName;
 
 		// If we've already built this test double, just return it
-		if (class_exists($mockerClass)) return $mockerClass;
+		if (class_exists($mockerClass, false)) return $mockerClass;
 
 		// If the mocked class is in a namespace, the test double goes in the same namespace
 		$namespaceDeclaration = $mockedNamespace ? "namespace $mockedNamespace;" : '';
