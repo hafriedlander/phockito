@@ -196,7 +196,7 @@ class Phockito {
 		$mockerClass = (self::_has_namespaces() ? $mockedNamespace.'\\' : '') . $mockerShortName;
 
 		// If we've already built this test double, just return it
-		if (class_exists($mockerClass)) return $mockerClass;
+		if (class_exists($mockerClass, false)) return $mockerClass;
 
 		// If the mocked class is in a namespace, the test double goes in the same namespace
 		$namespaceDeclaration = $mockedNamespace ? "namespace $mockedNamespace;" : '';
