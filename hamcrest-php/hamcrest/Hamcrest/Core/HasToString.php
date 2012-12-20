@@ -6,7 +6,7 @@
 
 require_once 'Hamcrest/FeatureMatcher.php';
 require_once 'Hamcrest/Matcher.php';
-require_once 'Hamcrest/Core/IsEqual.php';
+require_once 'Hamcrest/Util.php';
 
 /**
  * Matches if array size satisfies a nested matcher.
@@ -16,7 +16,7 @@ class Hamcrest_Core_HasToString extends Hamcrest_FeatureMatcher
 
   public function __construct(Hamcrest_Matcher $toStringMatcher)
   {
-    parent::__construct(self::TYPE_OBJECT, null, $toStringMatcher, 
+    parent::__construct(self::TYPE_OBJECT, null, $toStringMatcher,
         'an object with toString()', 'toString()'
     );
   }
@@ -49,10 +49,7 @@ class Hamcrest_Core_HasToString extends Hamcrest_FeatureMatcher
    */
   public static function hasToString($matcher)
   {
-    return new self(
-        $matcher instanceof Hamcrest_Matcher 
-        ? $matcher 
-        : Hamcrest_Core_IsEqual::equalTo($matcher));
+    return new self(Hamcrest_Util::wrapValueWithIsEqual($matcher));
   }
 
 }

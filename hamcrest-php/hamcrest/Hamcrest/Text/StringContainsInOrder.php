@@ -12,20 +12,20 @@ require_once 'Hamcrest/Description.php';
  */
 class Hamcrest_Text_StringContainsInOrder extends Hamcrest_TypeSafeMatcher
 {
-  
+
   private $_substrings;
-  
+
   public function __construct(array $substrings)
   {
     parent::__construct(self::TYPE_STRING);
-    
+
     $this->_substrings = $substrings;
   }
-  
+
   protected function matchesSafely($item)
   {
     $fromIndex = 0;
-    
+
     foreach ($this->_substrings as $substring)
     {
       if (false === $fromIndex = strpos($item, $substring, $fromIndex))
@@ -33,16 +33,16 @@ class Hamcrest_Text_StringContainsInOrder extends Hamcrest_TypeSafeMatcher
         return false;
       }
     }
-    
+
     return true;
   }
-  
+
   protected function describeMismatchSafely($item,
     Hamcrest_Description $mismatchDescription)
   {
     $mismatchDescription->appendText('was ')->appendText($item);
   }
-  
+
   public function describeTo(Hamcrest_Description $description)
   {
     $description->appendText('a string containing ')
@@ -54,11 +54,17 @@ class Hamcrest_Text_StringContainsInOrder extends Hamcrest_TypeSafeMatcher
   /**
    * Matches if value contains $substrings in a constrained order.
    *
-   * @factory
+   * @factory ...
    */
-  public static function stringContainsInOrder(array $substrings)
+  public static function stringContainsInOrder(/* args... */)
   {
-    return new self($substrings);
+    $args = func_get_args();
+
+    if (isset($args[0]) && is_array($args[0])) {
+      $args = $args[0];
+    }
+
+    return new self($args);
   }
-  
+
 }

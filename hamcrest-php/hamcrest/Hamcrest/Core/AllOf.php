@@ -7,6 +7,7 @@
 require_once 'Hamcrest/DiagnosingMatcher.php';
 require_once 'Hamcrest/Matcher.php';
 require_once 'Hamcrest/Description.php';
+require_once 'Hamcrest/Util.php';
 
 /**
  * Calculates the logical conjunction of multiple matchers. Evaluation is
@@ -15,22 +16,16 @@ require_once 'Hamcrest/Description.php';
  */
 class Hamcrest_Core_AllOf extends Hamcrest_DiagnosingMatcher
 {
-  
-  private $_matchers = array();
-  
+
+  private $_matchers;
+
   public function __construct(array $matchers)
   {
-    foreach ($matchers as $m)
-    {
-      if (!($m instanceof Hamcrest_Matcher))
-      {
-        throw new InvalidArgumentException();
-      }
-    }
-    
+    Hamcrest_Util::checkAllAreMatchers($matchers);
+
     $this->_matchers = $matchers;
   }
-  
+
   public function matchesWithDiagnosticDescription($item,
     Hamcrest_Description $mismatchDescription)
   {
@@ -40,37 +35,28 @@ class Hamcrest_Core_AllOf extends Hamcrest_DiagnosingMatcher
       {
         $mismatchDescription->appendDescriptionOf($matcher)->appendText(' ');
         $matcher->describeMismatch($item, $mismatchDescription);
-        
+
         return false;
       }
     }
-    
+
     return true;
   }
-  
+
   public function describeTo(Hamcrest_Description $description)
   {
     $description->appendList('(', ' and ', ')', $this->_matchers);
   }
-  
+
   /**
    * Evaluates to true only if ALL of the passed in matchers evaluate to true.
    *
    * @factory ...
    */
-  public static function allOf()
+  public static function allOf(/* args... */)
   {
     $args = func_get_args();
-    
-    //If array of matchers passed
-    if (isset($args[0]) && is_array($args[0]))
-    {
-      return new self($args[0]);
-    }
-    else //variable number of matcher args passed
-    {
-      return new self($args);
-    }
+    return new self(Hamcrest_Util::createMatcherArray($args));
   }
-  
+
 }

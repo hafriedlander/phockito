@@ -7,7 +7,7 @@
 require_once 'Hamcrest/BaseMatcher.php';
 require_once 'Hamcrest/Matcher.php';
 require_once 'Hamcrest/Description.php';
-require_once 'Hamcrest/Core/IsEqual.php';
+require_once 'Hamcrest/Util.php';
 
 /**
  * Decorates another Matcher, retaining the behavior but allowing tests
@@ -18,24 +18,24 @@ require_once 'Hamcrest/Core/IsEqual.php';
  */
 class Hamcrest_Core_Is extends Hamcrest_BaseMatcher
 {
-  
+
   private $_matcher;
-  
+
   public function __construct(Hamcrest_Matcher $matcher)
   {
     $this->_matcher = $matcher;
   }
-  
+
   public function matches($arg)
   {
     return $this->_matcher->matches($arg);
   }
-  
+
   public function describeTo(Hamcrest_Description $description)
   {
     $description->appendText('is ')->appendDescriptionOf($this->_matcher);
   }
-  
+
   public function describeMismatch($item,
     Hamcrest_Description $mismatchDescription)
   {
@@ -53,11 +53,7 @@ class Hamcrest_Core_Is extends Hamcrest_BaseMatcher
    */
   public static function is($value)
   {
-    $matcher = ($value instanceof Hamcrest_Matcher)
-      ? $value
-      : Hamcrest_Core_IsEqual::equalTo($value)
-      ;
-    return new self($matcher);
+    return new self(Hamcrest_Util::wrapValueWithIsEqual($value));
   }
-  
+
 }

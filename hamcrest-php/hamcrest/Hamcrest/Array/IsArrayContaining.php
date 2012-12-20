@@ -7,23 +7,23 @@
 require_once 'Hamcrest/TypeSafeMatcher.php';
 require_once 'Hamcrest/Description.php';
 require_once 'Hamcrest/Matcher.php';
-require_once 'Hamcrest/Core/IsEqual.php';
+require_once 'Hamcrest/Util.php';
 
 /**
  * Matches if an array contains an item satisfying a nested matcher.
  */
 class Hamcrest_Array_IsArrayContaining extends Hamcrest_TypeSafeMatcher
 {
-  
+
   private $_elementMatcher;
-  
+
   public function __construct(Hamcrest_Matcher $elementMatcher)
   {
     parent::__construct(self::TYPE_ARRAY);
-    
+
     $this->_elementMatcher = $elementMatcher;
   }
-  
+
   protected function matchesSafely($array)
   {
     foreach ($array as $element)
@@ -33,16 +33,16 @@ class Hamcrest_Array_IsArrayContaining extends Hamcrest_TypeSafeMatcher
         return true;
       }
     }
-    
+
     return false;
   }
-  
+
   protected function describeMismatchSafely($array,
     Hamcrest_Description $mismatchDescription)
   {
     $mismatchDescription->appendText('was ')->appendValue($array);
   }
-  
+
   public function describeTo(Hamcrest_Description $description)
   {
     $description
@@ -50,22 +50,17 @@ class Hamcrest_Array_IsArrayContaining extends Hamcrest_TypeSafeMatcher
          ->appendDescriptionOf($this->_elementMatcher)
          ;
   }
-  
+
   /**
    * Evaluates to true if any item in an array satisfies the given matcher.
-   * 
+   *
    * @param mixed $item as a {@link Hamcrest_Matcher} or a value.
    *
    * @factory hasValue
    */
   public static function hasItemInArray($item)
   {
-    $matcher = ($item instanceof Hamcrest_Matcher)
-      ? $item
-      : Hamcrest_Core_IsEqual::equalTo($item)
-      ;
-    
-    return new self($matcher);
+    return new self(Hamcrest_Util::wrapValueWithIsEqual($item));
   }
-  
+
 }
