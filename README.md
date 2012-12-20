@@ -172,6 +172,12 @@ PHP, so we always return null. TODO: Support using phpdoc @return when declared.
 
 ## License
 
-Copyright (C) 2011 Hamish Friedlander / SilverStripe. Distributable under the same license as SilverStripe.
+Copyright (C) 2012 Hamish Friedlander / SilverStripe. 
+
+Distributable under either the same license as SilverStripe or the 
+Apache Public License V2 (http://www.apache.org/licenses/LICENSE-2.0.html) at your choice
+
+You don’t have to do anything special to choose  one license or the other and you don’t 
+have to notify anyone which license you are using.
 
 Hamcrest-php is under it's own license - see hamcrest-php/LICENSE.txt.
