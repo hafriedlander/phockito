@@ -601,7 +601,10 @@ class Phockito_VerifyBuilder {
 			if ($count == $this->times) return;
 		}
 
-		$message  = "Failed asserting that method $called called {$this->times} times - actually called $count times.\n";
+		$message  = "Failed asserting that method $called was called {$this->times} times - actually called $count times.\n";
+		$message .= "Wanted call:\n";
+		$message .= print_r($args, true);
+		
 		$message .= "Calls:\n";
 
 		foreach (Phockito::$_call_list as $call) {
