@@ -1,0 +1,12 @@
+{
+	"name": "hafriedlander/phockito",
+	"description": "PHP Mocking framework inspired by Mockito for Java",
+	"keywords": ["mocks", "testing", "mockito"],
+	"license": "BSD-3-Clause",
+	"authors": [
+		{
+			"name": "Hamish Friedlander",
+			"email": "hamish@silverstripe.com"
+		}
+	]
+}
