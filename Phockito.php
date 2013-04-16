@@ -259,16 +259,23 @@ EOT;
 				else if ($parameterClass = $parameter->getClass()) $type = '\\'.$parameterClass->getName().' ';
 				else $type = '';
 
+				try {
+					$defaultValue = $parameter->getDefaultValue();
+				}
+				catch (ReflectionException $e) {
+					$defaultValue = null;
+				}
+
 				// Turn the method arguments into a php fragment the defines a function with them, including possibly the by-reference "&" and any default
 				$defparams[] =
 					$type .
 					($parameter->isPassedByReference() ? '&' : '') .
 					'$'.$parameter->getName() .
-					($parameter->isOptional() ? '=' . var_export($parameter->getDefaultValue(), true) : '')
+					($parameter->isOptional() ? '=' . var_export($defaultValue, true) : '')
 				;
 
 				// Finally cache the default value for matching against later
-				if ($parameter->isOptional()) self::$_defaults[$mockedClass][$method->name][$i] = $parameter->getDefaultValue();
+				if ($parameter->isOptional()) self::$_defaults[$mockedClass][$method->name][$i] = $defaultValue;
 			}
 
 			// Turn that array into a comma seperated list
