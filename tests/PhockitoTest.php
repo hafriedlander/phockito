@@ -176,6 +176,15 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$mock->Foo();
 	}
 
+	/** @expectedException PhockitoTest_StubResponse
+	 */
+	function testCanSpecifyThrowInstanceResponse() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+
+		Phockito::when($mock->Foo())->throw(new PhockitoTest_StubResponse());
+		$mock->Foo();
+	}
+
 	function _testCanSpecifyCallbackResponse_callback() {
 		return 'Foo';
 	}
