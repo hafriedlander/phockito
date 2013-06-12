@@ -1,4 +1,5 @@
 <?php
+error_reporting( E_ALL|E_STRICT );
 
 // Include Phockito
 require_once(dirname(dirname(__FILE__)) . '/Phockito.php');
@@ -245,6 +246,46 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		Phockito::when($mock->Quux())->return('Quux');
 
 		$this->assertEquals('Quux', $mock->Quux());
+	}
+
+	function testCanSpecifyReturnValueForReferenceNoInterfaceImplemented() {
+		//this call will succeed even if the derived type's method doesn't also return by ref
+		//If the return by ref doesn't come from an interface derived types can override it
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_NoImplements');
+		Phockito::when($mock->Foo())->return(4);
+		$res = &$mock->Foo();
+		$this->assertEquals(4, $res);
+
+	}
+
+	function testCanSpecifyReturnObjectForReferenceNoInterfaceImplemented() {
+		//this call will fatal error if the derived type's method doesn't also return by ref
+		//This is because it's defined like this in the interface (weird..)
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_Implements');
+		$obj = new PhockitoTest_MockMe();
+		Phockito::when($mock->Foo())->return($obj);
+		$res = $mock->Foo();
+		$this->assertEquals($obj, $res);
+	}
+
+	function testCanSpecifyReturnValueForReferenceInterfaceImplemented() {
+		//this call will fatal error if the derived type's method doesn't also return by ref
+		//This is because it's defined like this in the interface (weird..)
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_Implements');
+		Phockito::when($mock->Foo())->return(4);
+		$res = &$mock->Foo();
+		$this->assertEquals(4, $res);
+	}
+
+	function testCanSpecifyReturnObjectForReferenceInterfaceImplemented() {
+		//this call will fatal error if the derived type's method doesn't also return by ref
+		//This is because it's defined like this in the interface (weird..)
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_Implements');
+		$obj = new stdClass();
+
+		Phockito::when($mock->Foo())->return($obj);
+		$res = &$mock->Foo();
+		$this->assertEquals($obj, $res);
 	}
 
 	/** Test validating **/
