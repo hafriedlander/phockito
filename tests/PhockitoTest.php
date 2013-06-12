@@ -1,4 +1,5 @@
 <?php
+error_reporting( E_ALL|E_STRICT );
 
 // Include Phockito
 require_once(dirname(dirname(__FILE__)) . '/Phockito.php');
@@ -30,8 +31,8 @@ interface PhockitoTest_MockInterface {
 /** Classes with different types of modifiers */
 final class PhockitoTest_Final {}
 
-/** Classes with different types of methods */
 
+/** Classes with different types of methods */
 class PhockitoTest_FooIsStatic { static function Foo() { } }
 class PhockitoTest_FooIsProtected { protected function Foo() { } }
 class PhockitoTest_FooIsFinal { final function Foo() { } }
@@ -39,6 +40,11 @@ class PhockitoTest_FooIsFinal { final function Foo() { } }
 class PhockitoTest_FooHasIntegerDefaultArgument { function Foo($a = 1) { } }
 class PhockitoTest_FooHasArrayDefaultArgument { function Foo($a = array(1,2,3)) { } }
 class PhockitoTest_FooHasByReferenceArgument { function Foo(&$a) { } }
+
+/** Classes that return byRef */
+class PhockitoTest_FooReturnsByReference_NoImplements { function &Foo() { return 5;} }
+interface PhockitoTest_MockInterfaceFooReturnsByReference{ function &Foo(); }
+class PhockitoTest_FooReturnsByReference_Implements implements PhockitoTest_MockInterfaceFooReturnsByReference { function &Foo() { return 5;} }
 
 /** A class to get Phockito to throw when verification fails, to tell difference between Phockito failure and other PHPUnit assert failures */
 
@@ -104,6 +110,33 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$this->assertNull($mock->Foo($a));
 	}
 
+	function testCanCreateMockMethodWithReturnByReference() {
+		//this call will succeed even if the derived type's method doesn't also return by ref
+		//If the return by ref doesn't come from an interface derived types can override it
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_NoImplements');
+		$res = &$mock->Foo();
+		$this->assertNull($res);
+
+		//we need to ensure derived type returns by ref
+		$clazz = new ReflectionClass($mock);
+		$fooMethod = $clazz->getMethod("Foo");
+		$this->assertTrue($fooMethod->returnsReference());
+	}
+
+	function testCanCreateMockMethodWithReturnByReferenceImplementingInterfaceWithReturnByRef() {
+		//this call will fatal error if the derived type's method doesn't also return by ref
+		//This is because it's defined like this in the interface (weird..)
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_Implements');
+
+		$res = &$mock->Foo();
+		$this->assertNull($res);
+
+		//we need to ensure derived type returns by ref
+		$clazz = new ReflectionClass($mock);
+		$fooMethod = $clazz->getMethod("Foo");
+		$this->assertTrue($fooMethod->returnsReference());
+	}
+
 	/** Test stubbing **/
 
 	function testCanSpecifySingleReturnValue() {
@@ -138,7 +171,7 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($mock->Bar('b'), 2);
 	}
 
-	function testMocksHaveIndependantReturnValueLists() {
+	function testMocksHaveIndependentReturnValueLists() {
 		$mock1 = Phockito::mock('PhockitoTest_MockMe');
 		Phockito::when($mock1->Foo())->return(1);
 
@@ -217,6 +250,7 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals('Quux', $mock->Quux());
 	}
 
+
 	/**
 	 * The raised error will be wrapped in an exception by PHPUnit
 	 * @expectedException PHPUnit_Framework_Error
@@ -255,6 +289,46 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 	function testProvidingTooManyArgumentsToStubbingActionThrowsAnError() {
 		$mock = Phockito::mock('PhockitoTest_MockMe');
 		Phockito::when($mock->Foo())->return(1, 2);
+	}
+
+	function testCanSpecifyReturnValueForReferenceNoInterfaceImplemented() {
+		//this call will succeed even if the derived type's method doesn't also return by ref
+		//If the return by ref doesn't come from an interface derived types can override it
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_NoImplements');
+		Phockito::when($mock->Foo())->return(4);
+		$res = &$mock->Foo();
+		$this->assertEquals(4, $res);
+
+	}
+
+	function testCanSpecifyReturnObjectForReferenceNoInterfaceImplemented() {
+		//this call will fatal error if the derived type's method doesn't also return by ref
+		//This is because it's defined like this in the interface (weird..)
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_Implements');
+		$obj = new PhockitoTest_MockMe();
+		Phockito::when($mock->Foo())->return($obj);
+		$res = $mock->Foo();
+		$this->assertEquals($obj, $res);
+	}
+
+	function testCanSpecifyReturnValueForReferenceInterfaceImplemented() {
+		//this call will fatal error if the derived type's method doesn't also return by ref
+		//This is because it's defined like this in the interface (weird..)
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_Implements');
+		Phockito::when($mock->Foo())->return(4);
+		$res = &$mock->Foo();
+		$this->assertEquals(4, $res);
+	}
+
+	function testCanSpecifyReturnObjectForReferenceInterfaceImplemented() {
+		//this call will fatal error if the derived type's method doesn't also return by ref
+		//This is because it's defined like this in the interface (weird..)
+		$mock = Phockito::mock('PhockitoTest_FooReturnsByReference_Implements');
+		$obj = new stdClass();
+
+		Phockito::when($mock->Foo())->return($obj);
+		$res = &$mock->Foo();
+		$this->assertEquals($obj, $res);
 	}
 
 	/** Test validating **/
