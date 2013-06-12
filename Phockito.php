@@ -244,6 +244,9 @@ EOT;
 			// Get the modifiers for the function as a string (static, public, etc) - ignore abstract though, all mock methods are concrete
 			$modifiers = implode(' ', Reflection::getModifierNames($method->getModifiers() & ~(ReflectionMethod::IS_ABSTRACT)));
 
+			// See if the method is return byRef
+			$byRef = $method->returnsReference() ? "&" : "";
+
 			// PHP fragment that is the arguments definition for this method
 			$defparams = array(); $callparams = array();
 
@@ -303,7 +306,7 @@ EOT;
 			// Build an overriding method that calls Phockito::__called, and never calls the parent
 			else {
 				$php[] = <<<EOT
-  $modifiers function {$method->name}( $defparams ){
+  $modifiers function $byRef {$method->name}( $defparams ){
     \$args = func_get_args();
 
     \$backtrace = debug_backtrace();
