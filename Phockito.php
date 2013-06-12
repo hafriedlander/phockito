@@ -331,8 +331,8 @@ EOT;
 
     \$response = {$phockito}::__called($mockedClassString, \$instance, '{$method->name}', \$args);
   
-    if (\$response) return {$phockito}::__perform_response(\$response, \$args);
-    else return $failover;
+	\$result = \$response ? {$phockito}::__perform_response(\$response, \$args) : ($failover);
+    return \$result;
   }
 EOT;
 			}
