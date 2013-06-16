@@ -566,6 +566,51 @@ class Phockito_WhenBuilder {
 
 		return $this;
 	}
+
+	/**
+	 * Commonly used methods, provided for benefit of code completion in IDEs.
+	 *
+	 * Note that "return" and "throw" cannot be added here, as they are PHP keywords.
+	 */
+
+	/**
+	 * Return $value when the stubbed method is called
+	 *
+	 * @param $value
+	 * @return $this
+	 */
+	function thenReturn($value) { return $this->__call('thenReturn', func_get_args()); }
+
+	/**
+	 * Throw $exception when the stubbed method is called
+	 *
+	 * @param $exception
+	 * @return $this
+	 */
+	function thenThrow($exception) { return $this->__call('thenThrow', func_get_args()); }
+
+	/**
+	 * Invoke $callback when the stubbed method is called
+	 *
+	 * @param $callback
+	 * @return $this
+	 */
+	function callback($callback) { return $this->__call('callback', func_get_args()); }
+	/**
+	 * Invoke $callback when the stubbed method is called
+	 *
+	 * @param $callback
+	 * @return $this
+	 */
+	function thenCallback($callback) { return $this->__call('thenCallback', func_get_args()); }
+
+	/**
+	 * Repeat the previous action (return, throw or callback) with the argument $arg when the stubbed method is called
+	 *
+	 * @param $arg
+	 * @return $this
+	 */
+	function then($arg) { return $this->__call('then', func_get_args()); }
 }
 
 /**
