@@ -3,6 +3,7 @@
 namespace {
 	// Include Phockito
 	require_once(dirname(dirname(__FILE__)) . '/Phockito.php');
+	require_once(dirname(dirname(__FILE__)) . '/HamcrestTypeBridge.php');
 	Phockito::include_hamcrest();
 
 	// Turn on strict error checking - this makes sure that argument types are checked properly, etc
@@ -92,6 +93,16 @@ namespace {
 
 			Phockito::when($mock->Foo($arg))->return('Bar');
 			$this->assertEquals($mock->Foo($arg), 'Bar');
+		}
+
+		function testCanBridgeNamespacedClass() {
+			$mockMatcher = new \Hamcrest_Core_IsInstanceOf('\org\phockito\tests\PhockitoNamespaceTest_MockMe');
+
+			$typeBridge = \HamcrestTypeBridge::argOfTypeThat(
+				'\org\phockito\tests\PhockitoNamespaceTest_MockMe',
+				$mockMatcher);
+
+			$this->assertThat($typeBridge, $this->isInstanceOf('\org\phockito\tests\PhockitoNamespaceTest_MockMe'));
 		}
 
 	}
