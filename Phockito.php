@@ -506,6 +506,11 @@ interface Phockito_MockMarker {
 /**
  * A builder than is returned by Phockito::when to capture the methods that specify the stubbed responses
  * for a particular mocked method / arguments set
+ *
+ * @method Phockito_WhenBuilder return($value) thenReturn($value)
+ * @method Phockito_WhenBuilder throw($exception) thenThrow($exception)
+ * @method Phockito_WhenBuilder callback($callback) thenCallback($callback)
+ * @method Phockito_WhenBuilder then($arg)
  */
 class Phockito_WhenBuilder {
 
@@ -566,51 +571,6 @@ class Phockito_WhenBuilder {
 
 		return $this;
 	}
-
-	/**
-	 * Commonly used methods, provided for benefit of code completion in IDEs.
-	 *
-	 * Note that "return" and "throw" cannot be added here, as they are PHP keywords.
-	 */
-
-	/**
-	 * Return $value when the stubbed method is called
-	 *
-	 * @param $value
-	 * @return $this
-	 */
-	function thenReturn($value) { return $this->__call(__FUNCTION__, func_get_args()); }
-
-	/**
-	 * Throw $exception when the stubbed method is called
-	 *
-	 * @param $exception
-	 * @return $this
-	 */
-	function thenThrow($exception) { return $this->__call(__FUNCTION__, func_get_args()); }
-
-	/**
-	 * Invoke $callback when the stubbed method is called
-	 *
-	 * @param $callback
-	 * @return $this
-	 */
-	function callback($callback) { return $this->__call(__FUNCTION__, func_get_args()); }
-	/**
-	 * Invoke $callback when the stubbed method is called
-	 *
-	 * @param $callback
-	 * @return $this
-	 */
-	function thenCallback($callback) { return $this->__call(__FUNCTION__, func_get_args()); }
-
-	/**
-	 * Repeat the previous action (return, throw or callback) with the argument $arg when the stubbed method is called
-	 *
-	 * @param $arg
-	 * @return $this
-	 */
-	function then($arg) { return $this->__call(__FUNCTION__, func_get_args()); }
 }
 
 /**
