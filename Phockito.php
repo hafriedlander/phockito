@@ -552,13 +552,26 @@ class Phockito_WhenBuilder {
 			$this->__phockito_setMethod($called, $args);
 		}
 		else {
+			if (count($args) !== 1) user_error("$called requires exactly one argument", E_USER_ERROR);
 			$value = $args[0]; $action = null;
 
 			if (preg_match('/return/i', $called)) $action = 'return';
 			else if (preg_match('/throw/i', $called)) $action = 'throw';
 			else if (preg_match('/callback/i', $called)) $action = 'callback';
-			else if ($called == 'then' && $this->lastAction) $action = $this->lastAction;
-			else user_error("Unknown when action $called - should contain return or throw somewhere in method name", E_USER_ERROR);
+			else if ($called == 'then') {
+				if ($this->lastAction) {
+					$action = $this->lastAction;
+				} else {
+					user_error(
+						"Cannot use then without previously invoking a \"return\", \"throw\", or \"callback\" action",
+						E_USER_ERROR
+					);
+				}
+			}
+			else user_error(
+				"Unknown when action $called - should contain \"return\", \"throw\" or \"callback\" somewhere in method name",
+				E_USER_ERROR
+			);
 
 			Phockito::$_responses[$this->instance][$this->method][$this->i]['steps'][] = array(
 				'action' => $action,
