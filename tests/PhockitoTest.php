@@ -207,11 +207,51 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$mock->Foo();
 	}
 
-	function testCanSpecificReturnValueForUndefinedFunction() {
+	function testCanSpecifyReturnValueForUndefinedFunction() {
 		$mock = Phockito::mock('PhockitoTest_MockMe');
 		Phockito::when($mock->Quux())->return('Quux');
 
 		$this->assertEquals('Quux', $mock->Quux());
+	}
+
+	/**
+	 * The raised error will be wrapped in an exception by PHPUnit
+	 * @expectedException PHPUnit_Framework_Error
+	 * @expectedExceptionCode E_USER_ERROR
+	 */
+	function testCannotUseThenWithoutAPreviousAction() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::when($mock->Foo())->then(1);
+	}
+
+	/**
+	 * The raised error will be wrapped in an exception by PHPUnit
+	 * @expectedException PHPUnit_Framework_Error
+	 * @expectedExceptionCode E_USER_ERROR
+	 */
+	function testUnknownStubbingActionThrowsAnError() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::when($mock->Foo())->thenDoSomethingUndefined(1);
+	}
+
+	/**
+	 * The raised error will be wrapped in an exception by PHPUnit
+	 * @expectedException PHPUnit_Framework_Error
+	 * @expectedExceptionCode E_USER_ERROR
+	 */
+	function testProvidingTooFewArgumentsToStubbingActionThrowsAnError() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::when($mock->Foo())->return();
+	}
+
+	/**
+	 * The raised error will be wrapped in an exception by PHPUnit
+	 * @expectedException PHPUnit_Framework_Error
+	 * @expectedExceptionCode E_USER_ERROR
+	 */
+	function testProvidingTooManyArgumentsToStubbingActionThrowsAnError() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::when($mock->Foo())->return(1, 2);
 	}
 
 	/** Test validating **/
