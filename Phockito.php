@@ -560,12 +560,14 @@ class Phockito_WhenBuilder {
 				} else {
 					user_error(
 						"Cannot use then without previously invoking a \"return\", \"throw\", or \"callback\" action",
-						E_USER_ERROR);
+						E_USER_ERROR
+					);
 				}
 			}
 			else user_error(
 				"Unknown when action $called - should contain \"return\", \"throw\" or \"callback\" somewhere in method name",
-				E_USER_ERROR);
+				E_USER_ERROR
+			);
 
 			Phockito::$_responses[$this->instance][$this->method][$this->i]['steps'][] = array(
 				'action' => $action,
