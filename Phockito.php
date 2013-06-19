@@ -151,7 +151,11 @@ class Phockito {
 
 	public static function __perform_response($response, $args) {
 		if ($response['action'] == 'return') return $response['value'];
-		else if ($response['action'] == 'throw') { $class = $response['value']; throw (is_object($class) ? $class : new $class()); }
+		else if ($response['action'] == 'throw') {
+			/** @var Exception $class */
+			$class = $response['value'];
+			throw (is_object($class) ? $class : new $class());
+		}
 		else if ($response['action'] == 'callback') return call_user_func_array($response['value'], $args);
 		else user_error("Got unknown action {$response['action']} - how did that happen?", E_USER_ERROR);
 	}
