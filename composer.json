@@ -8,5 +8,8 @@
 			"name": "Hamish Friedlander",
 			"email": "hamish@silverstripe.com"
 		}
-	]
+	],
+	 "autoload": {
+			"classmap": ["."]
+		}
 }
