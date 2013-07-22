@@ -8,6 +8,7 @@ class PhockitoSpiesTest_MockMe {
 
 	function Foo() { throw new Exception('Base method Foo was called'); }
 	function Bar() { return $this->Foo(); }
+	function Baz($response) { return $response; }
 }
 
 class PhockitoSpiesTest extends PHPUnit_Framework_TestCase {
@@ -20,6 +21,11 @@ class PhockitoSpiesTest extends PHPUnit_Framework_TestCase {
 
 		$this->assertEquals($spy->Foo(), 1);
 		$this->assertEquals($spy->Bar(), 1);
+	}
+
+	function testStubMethodWithArgumentNamedResponse() {
+		$spy = Phockito::spy('PhockitoSpiesTest_MockMe');
+		$this->assertEquals($spy->Baz(1), 1);
 	}
 
 	/** Test constructor calling */
