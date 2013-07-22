@@ -487,6 +487,8 @@ EOT;
 		}
 	}
 
+	const TYPEHINT_RX = '/^Argument (\d)+ passed to (?:(\w+)::)?(\w+)\(\) must be an instance of (\w+), instance of (\w+) given/';
+
 	/**
 	 * Includes the Hamcrest matchers. You don't have to, but if you don't you can't to nice generic stubbing and verification
 	 * @static
@@ -497,6 +499,18 @@ EOT;
 		
 		if ($include_globals) require_once('Hamcrest.php');
 		else require_once('Hamcrest/Matchers.php');
+
+		// Disable type-hinting for Hamcrest Matchers.
+		set_error_handler(function($lvl, $msg){
+			if ($lvl == E_RECOVERABLE_ERROR) {
+				if (preg_match(Phockito::TYPEHINT_RX, $msg, $match)) {
+					$ref = new ReflectionClass($match[5]);
+					if ($ref->implementsInterface('Hamcrest_Matcher')) return true;
+				}
+			}
+
+			return false;
+		});
 	}
 }
 
