@@ -182,6 +182,8 @@ class Phockito {
 		// Reflect on the mocked class
 		$reflect = new ReflectionClass($mockedClass);
 
+		if ($reflect->isFinal()) user_error("Can't mock final class $mockedClass", E_USER_ERROR);
+
 		// Build up an array of php fragments that make the mocking class definition
 		$php = array();
 
