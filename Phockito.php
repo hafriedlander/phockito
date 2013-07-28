@@ -111,8 +111,15 @@ class Phockito {
 			$u = $a[$i]; $v = $b[$i];
 
 			// If the argument in $a is a hamcrest matcher, call match on it. WONTFIX: Can't check if function was passed a hamcrest matcher
-			if (interface_exists('Hamcrest_Matcher') && $u instanceof Hamcrest_Matcher) {
-				if (!$u->matches($v)) return false;
+			if (interface_exists('Hamcrest_Matcher') && ($u instanceof Hamcrest_Matcher || isset($u->__phockito_matcher))) {
+				// The matcher can either be passed directly, or wrapped in a mock (for type safety reasons)
+				$matcher = null;
+				if ($u instanceof Hamcrest_Matcher) {
+					$matcher = $u;
+				} elseif (isset($u->__phockito_matcher)) {
+					$matcher = $u->__phockito_matcher;
+				}
+				if ($matcher != null && !$matcher->matches($v)) return false;
 			}
 			// Otherwise check for equality by checking the equality of the serialized version
 			else {
@@ -168,19 +175,20 @@ class Phockito {
 	 *
 	 * @static
 	 * @param bool $partial - Should test double be a partial or a full mock
-	 * @param string $mockerClass - The name of the class to create the mock as
 	 * @param string $mockedClass - The name of the class (or interface) to create a mock of
-	 * @return void
+	 * @return string The name of the mocker class
 	 */
 	protected static function build_test_double($partial, $mockedClass) {
 		// Bail if we were passed a classname that doesn't exist
-		if (!class_exists($mockedClass) && !interface_exists($mockedClass)) user_error("Can't mock non-existant class $mockedClass", E_USER_ERROR);
+		if (!class_exists($mockedClass) && !interface_exists($mockedClass)) user_error("Can't mock non-existent class $mockedClass", E_USER_ERROR);
 
 		// How to get a reference to the Phockito class itself
 		$phockito = self::_has_namespaces() ? '\\Phockito' : 'Phockito';
 
 		// Reflect on the mocked class
 		$reflect = new ReflectionClass($mockedClass);
+
+		if ($reflect->isFinal()) user_error("Can't mock final class $mockedClass", E_USER_ERROR);
 
 		// Build up an array of php fragments that make the mocking class definition
 		$php = array();
@@ -500,8 +508,13 @@ EOT;
 	static function include_hamcrest($include_globals = true) {
 		set_include_path(get_include_path().PATH_SEPARATOR.dirname(__FILE__).'/hamcrest-php/hamcrest');
 		
-		if ($include_globals) require_once('Hamcrest.php');
-		else require_once('Hamcrest/Matchers.php');
+		if ($include_globals) {
+			require_once('Hamcrest.php');
+			require_once('HamcrestTypeBridge_Globals.php');
+		} else {
+			require_once('Hamcrest/Matchers.php');
+			require_once('HamcrestTypeBridge.php');
+		}
 	}
 }
 

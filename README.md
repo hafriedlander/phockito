@@ -88,7 +88,7 @@ matches some rule.
 Hamcrest matchers are not included by default, so the first step is to call `Phockito::include_hamcrest();` immediately after including Phockito. 
 Note that this will import the Hamcrest matchers as global functions - passing false as an argument will keep your namespace clean by making all matchers only available as static methods of `Hamcrest` (at the expense of worse looking test code).
 
-Once included you can pass a hamcrest matcher as an argument in your when or verify rule, eg:
+Once included you can pass a Hamcrest matcher as an argument in your when or verify rule, eg:
 
 ```php
 class A {
@@ -99,7 +99,7 @@ $stub = Phockito::mock('A');
 Phockito::when($stub)->Foo(anything())->return('Zap');
 ```
 
-Some common hamcrest matchers:
+Some common Hamcrest matchers:
 
 - Core
 	* `anything` - always matches, useful if you don't care what the object under test is
@@ -125,6 +125,29 @@ Some common hamcrest matchers:
 
 In Mockito, the methods when building a stub are limited to thenReturns, thenThrows. In Phockito, you can use any method
 as long as it has 'return' or 'throw' in it, so `Phockito::when(...)->return(1)->thenReturn(2)` is fine.
+
+#### Type-safe argument matching
+
+In Mockito, to use a Hamcrest matcher, the `argThat` method is used to satisfy the type checker. In PHP, a little extra
+help is needed. Phockito provides the `argOfTypeThat` for provided Hamcrest matchers to type-hinted parameters:
+
+```php
+class A {
+    function Foo(B $b){ }
+}
+
+class B {}
+
+$stub = Phockito::mock('A');
+$b = new B();
+Phockito::when($stub)->Foo(argOfTypeThat('B', is(equalTo($b))))->return('Zap');
+```
+
+It's also possible to pass a mock to 'when', rather than the result of a method call on a mock, e.g.
+`Phockito::when($mock)->methodToStub(...)->thenReturn(...)`. This side-steps the type system entirely.
+
+Note that `argOfTypeThat` is only compatible with object type-hints; arguments with `array` or `callable` type-hints
+cannot be handled in a type-safe way.
 
 #### Verify 'times' argument changed
 
@@ -157,7 +180,7 @@ Phockito::when($mock->Bar(1))->return('A');
 
 $mock->Bar(1); // Returns 'A'
 $mock->Bar(1, 2); // Also returns 'A'
-$mock->Bar(1, 3); // Returns null, since no stubed return value matches
+$mock->Bar(1, 3); // Returns null, since no stubbed return value matches
 ```
 
 #### Return typing
@@ -167,7 +190,7 @@ PHP, so we always return null. TODO: Support using phpdoc @return when declared.
 
 ## TODO
 
- - Mochito-specific hamcrest matchers (anyString, etc)
+ - Mockito-specific hamcrest matchers (anyString, etc)
  - Ordered verification
 
 ## License

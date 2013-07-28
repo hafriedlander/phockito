@@ -27,6 +27,9 @@ interface PhockitoTest_MockInterface {
 	function Bar($a);
 }
 
+/** Classes with different types of modifiers */
+final class PhockitoTest_Final {}
+
 /** Classes with different types of methods */
 
 class PhockitoTest_FooIsStatic { static function Foo() { } }
@@ -345,6 +348,14 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$mock = Phockito::mock('PhockitoTest_MockMe');
 		$mock->Foo();
 		Phockito::verify($mock, '2+')->Foo();
+	}
+
+	/**
+	 * @expectedException PHPUnit_Framework_Error
+	 * @expectedExceptionCode E_USER_ERROR
+	 */
+	function testCannotMockFinalClass() {
+		Phockito::mock('PhockitoTest_Final');
 	}
 
 }
