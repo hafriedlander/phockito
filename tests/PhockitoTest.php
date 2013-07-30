@@ -28,10 +28,8 @@ interface PhockitoTest_MockInterface {
 	function Bar($a);
 }
 
-
 /** Classes with different types of modifiers */
 final class PhockitoTest_Final {}
-
 
 /** Classes with different types of methods */
 
@@ -253,6 +251,7 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 	}
 
 
+
 	/**
 	 * The raised error will be wrapped in an exception by PHPUnit
 	 * @expectedException PHPUnit_Framework_Error
@@ -331,7 +330,6 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		Phockito::when($mock->Foo())->return($obj);
 		$res = &$mock->Foo();
 		$this->assertEquals($obj, $res);
-
 	}
 
 	/** Test validating **/
