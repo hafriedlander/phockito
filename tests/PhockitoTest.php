@@ -32,10 +32,6 @@ interface PhockitoTest_MockInterface {
 /** Classes with different types of modifiers */
 final class PhockitoTest_Final {}
 
-interface PhockitoTest_MockInterfaceFooReturnsByReference{
-	function &Foo();
-}
-
 
 /** Classes with different types of methods */
 
@@ -46,7 +42,10 @@ class PhockitoTest_FooIsFinal { final function Foo() { } }
 class PhockitoTest_FooHasIntegerDefaultArgument { function Foo($a = 1) { } }
 class PhockitoTest_FooHasArrayDefaultArgument { function Foo($a = array(1,2,3)) { } }
 class PhockitoTest_FooHasByReferenceArgument { function Foo(&$a) { } }
+
+/** Classes that return byRef */
 class PhockitoTest_FooReturnsByReference_NoImplements { function &Foo() { return 5;} }
+interface PhockitoTest_MockInterfaceFooReturnsByReference{ function &Foo(); }
 class PhockitoTest_FooReturnsByReference_Implements implements PhockitoTest_MockInterfaceFooReturnsByReference { function &Foo() { return 5;} }
 
 /** A class to get Phockito to throw when verification fails, to tell difference between Phockito failure and other PHPUnit assert failures */
@@ -174,7 +173,7 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($mock->Bar('b'), 2);
 	}
 
-	function testMocksHaveIndependantReturnValueLists() {
+	function testMocksHaveIndependentReturnValueLists() {
 		$mock1 = Phockito::mock('PhockitoTest_MockMe');
 		Phockito::when($mock1->Foo())->return(1);
 
@@ -292,6 +291,7 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 	function testProvidingTooManyArgumentsToStubbingActionThrowsAnError() {
 		$mock = Phockito::mock('PhockitoTest_MockMe');
 		Phockito::when($mock->Foo())->return(1, 2);
+	}
 
 	function testCanSpecifyReturnValueForReferenceNoInterfaceImplemented() {
 		//this call will succeed even if the derived type's method doesn't also return by ref
