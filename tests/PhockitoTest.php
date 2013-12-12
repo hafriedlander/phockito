@@ -185,7 +185,19 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($mock2->Foo(), 2);
 	}
 
-	function testNoSpecForOptionalArgumentMatchesDefault() {
+    function testCanOverWriteReturnValue() {
+        $mock = Phockito::mock('PhockitoTest_MockMe');
+
+        Phockito::when($mock->Foo())->thenReturn(0);
+        Phockito::when($mock->Foo())->thenReturn(1);
+        Phockito::when($mock->Foo())->thenReturn(2);
+
+        $this->assertEquals(2, $mock->Foo());
+        $this->assertEquals(2, $mock->Foo());
+        $this->assertEquals(2, $mock->Foo());
+    }
+
+    function testNoSpecForOptionalArgumentMatchesDefault() {
 		$mock = Phockito::mock('PhockitoTest_FooHasIntegerDefaultArgument');
 		
 		Phockito::when($mock->Foo())->return(1);
