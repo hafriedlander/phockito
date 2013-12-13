@@ -129,7 +129,7 @@ class Phockito {
 				if (serialize($u) != serialize($v)) return false;
 			}
 		}
-		
+
 		return true;
 	}
 
@@ -264,7 +264,7 @@ EOT;
 
 			// Array of defaults (sparse numeric)
 			self::$_defaults[$mockedClass][$method->name] = array();
-			
+
 			foreach ($method->getParameters() as $i => $parameter) {
 				// Turn the method arguments into a php fragment that calls a function with them
 				$callparams[] = '$'.$parameter->getName();
@@ -430,7 +430,7 @@ EOT;
 
 	static function spy_instance($class /*, $constructor_arg_1, ... */) {
 		$spyClass = self::spy_class($class);
-		
+
 		$res = new $spyClass();
 
 		// Find the constructor args
@@ -447,7 +447,7 @@ EOT;
 				call_user_func_array($constructor, $constructor_args);
 			}
 		}
-		
+
 		// And done
 		return $res;
 	}
@@ -466,9 +466,10 @@ EOT;
 	 */
 	static function when($arg = null) {
 		if ($arg instanceof Phockito_MockMarker) {
-			return new Phockito_WhenBuilder($arg->__phockito_instanceid);
+			return new Phockito_WhenBuilder($arg->__phockito_instanceid, $arg->__phockito_class);
 		}
 		else {
+
 			/** @var Phockito_Invocation $invocation */
 			$invocation = array_shift(self::$_invocation_list);
 			return new Phockito_WhenBuilder($invocation->instanceId, $invocation->methodName, $invocation->args);
@@ -540,11 +541,11 @@ EOT;
 	static function reset($mock, $method = null) {
 		// Get the instance ID. Only resets instance-specific info ATM
 		$instance = $mock->__phockito_instanceid;
-		
+
 		// Remove any stored returns
 		if ($method) unset(self::$_responses[$instance][$method]);
 		else unset(self::$_responses[$instance]);
-		
+
 		// Remove all call history
 		/** @var Phockito_Invocation $invocation */
 		foreach (self::$_invocation_list as $i => $invocation) {
@@ -584,7 +585,7 @@ EOT;
 	 */
 	static function include_hamcrest($include_globals = true) {
 		set_include_path(get_include_path().PATH_SEPARATOR.dirname(__FILE__).'/hamcrest-php/hamcrest');
-		
+
 		if ($include_globals) {
 			/** @noinspection PhpIncludeInspection */
 			require_once('Hamcrest.php');
@@ -622,6 +623,7 @@ interface Phockito_MockMarker {
 class Phockito_WhenBuilder {
 
 	protected $instance;
+	protected $class;
 	protected $method;
 	protected $i;
 
@@ -637,15 +639,27 @@ class Phockito_WhenBuilder {
 		if (!isset(Phockito::$_responses[$instance])) Phockito::$_responses[$instance] = array();
 		if (!isset(Phockito::$_responses[$instance][$method])) Phockito::$_responses[$instance][$method] = array();
 
-		$this->i = count(Phockito::$_responses[$instance][$method]);
+        // Check if the method and args has been set up before, if so, replace it
+        foreach (Phockito::$_responses[$instance][$method] as $i => &$matcher) {
+            if (Phockito::_arguments_match($this->class, $method, $matcher['args'], $args)) {
+                $this->i = $i;
+                $matcher['steps'] = array();
+
+                return;
+            }
+        }
+
+        // Add the response
+        $this->i = count(Phockito::$_responses[$instance][$method]);
 		Phockito::$_responses[$instance][$method][] = array(
 			'args' => $args,
 			'steps' => array()
 		);
 	}
 
-	function __construct($instance, $method = null, $args = null) {
+	function __construct($instance, $class, $method = null, $args = null) {
 		$this->instance = $instance;
+        $this->class = $class;
 		if ($method) $this->__phockito_setMethod($method, $args);
 	}
 
