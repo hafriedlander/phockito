@@ -556,19 +556,15 @@ class Phockito_WhenBuilder {
 		if (!isset(Phockito::$_responses[$instance])) Phockito::$_responses[$instance] = array();
 		if (!isset(Phockito::$_responses[$instance][$method])) Phockito::$_responses[$instance][$method] = array();
 
-        // Check if the method and args has been set up before, if so, replace it
+        $this->i = count(Phockito::$_responses[$instance][$method]);
         foreach (Phockito::$_responses[$instance][$method] as $i => &$matcher) {
             if (Phockito::_arguments_match($this->class, $method, $matcher['args'], $args)) {
                 $this->i = $i;
-                $matcher['steps'] = array();
-
-                return;
+                break;
             }
         }
 
-        // Add the response
-        $this->i = count(Phockito::$_responses[$instance][$method]);
-		Phockito::$_responses[$instance][$method][] = array(
+		Phockito::$_responses[$instance][$method][$this->i] = array(
 			'args' => $args,
 			'steps' => array()
 		);
