@@ -140,7 +140,7 @@ class B {}
 
 $stub = Phockito::mock('A');
 $b = new B();
-Phockito::when($stub)->Foo(argOfTypeThat('B', is(equalTo($b))))->return('Zap');
+Phockito::when($stub->Foo(argOfTypeThat('B', is(equalTo($b)))))->return('Zap');
 ```
 
 It's also possible to pass a mock to 'when', rather than the result of a method call on a mock, e.g.
