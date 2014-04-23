@@ -24,3 +24,23 @@ function verify() {
 	$args = func_get_args();
 	return call_user_func_array(array('Phockito', 'verify'), $args);
 }
+
+function calledTimes($times) {
+	return Phockito::times($times);
+}
+
+function calledNever() {
+	return Phockito::never();
+}
+
+function calledAtLeast($times) {
+	return Phockito::atLeast($times);
+}
+
+function calledAtLeastOnce() {
+	return Phockito::atLeastOnce();
+}
+
+function calledAtMost($times) {
+	return Phockito::atMost($times);
+}

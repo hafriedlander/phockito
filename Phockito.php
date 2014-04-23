@@ -1,5 +1,7 @@
 <?php
 
+require_once('VerificationMode.php');
+
 /**
  * Phockito - Mockito for PHP
  *
@@ -491,6 +493,44 @@ EOT;
 	}
 
 	/**
+	 * @param int $times
+	 * @return VerificationMode
+	 */
+	static function times($times) {
+		return new Times($times);
+	}
+
+	/**
+	 * @return VerificationMode
+	 */
+	static function never() {
+		return self::times(0);
+	}
+
+	/**
+	 * @param int $times
+	 * @return VerificationMode
+	 */
+	static function atLeast($times) {
+		return new AtLeast($times);
+	}
+
+	/**
+	 * @return VerificationMode
+	 */
+	static function atLeastOnce() {
+		return self::atLeast(1);
+	}
+
+	/**
+	 * @param int $times
+	 * @return VerificationMode
+	 */
+	static function atMost($times) {
+		return new AtMost($times);
+	}
+
+	/**
 	 * Reset a mock instance. Forget all calls and stubbed responses for a given instance
 	 * @static
 	 * @param Phockito_MockMarker|Object $mock - The mock instance to reset
@@ -658,14 +698,22 @@ class Phockito_VerifyBuilder {
 			}
 		}
 
-		if (preg_match('/([0-9]+)\+/', $this->times, $match)) {
-			if ($count >= (int)$match[1]) return;
+		if ($this->times instanceof VerificationMode) {
+			$verificationMode = $this->times;
+		}
+		else if (preg_match('/([0-9]+)\+/', $this->times, $match)) {
+			$verificationMode = Phockito::atLeast((int)$match[1]);
 		}
 		else {
-			if ($count == $this->times) return;
+			$verificationMode = Phockito::times($this->times);
 		}
 
-		$message  = "Failed asserting that method $called was called {$this->times} times - actually called $count times.\n";
+		if ($verificationMode->verify($count)) {
+			return;
+		}
+		$conditionDescription = $verificationMode->describeCondition();
+
+		$message  = "Failed asserting that method $called $conditionDescription - actually called $count times.\n";
 		$message .= "Wanted call:\n";
 		$message .= print_r($args, true);
 		
