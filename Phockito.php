@@ -1,5 +1,7 @@
 <?php
 
+require_once('VerificationMode.php');
+
 /**
  * Phockito - Mockito for PHP
  *
@@ -477,11 +479,49 @@ EOT;
 	 *
 	 * @static
 	 * @param Phockito_Mock $mock - The mock instance to verify
-	 * @param string $times - The number of times the method should be called, either a number, or a number followed by "+"
+	 * @param string|int|VerificationMode $times - The number of times the method should be called, either a number, or a number followed by "+"
 	 * @return Phockito_VerifyBuilder
 	 */
 	static function verify($mock, $times = 1) {
 		return new Phockito_VerifyBuilder($mock->__phockito_class, $mock->__phockito_instanceid, $times);
+	}
+
+	/**
+	 * @param int $times
+	 * @return VerificationMode
+	 */
+	static function times($times) {
+		return new Times($times);
+	}
+
+	/**
+	 * @return VerificationMode
+	 */
+	static function never() {
+		return self::times(0);
+	}
+
+	/**
+	 * @param int $times
+	 * @return VerificationMode
+	 */
+	static function atLeast($times) {
+		return new AtLeast($times);
+	}
+
+	/**
+	 * @return VerificationMode
+	 */
+	static function atLeastOnce() {
+		return self::atLeast(1);
+	}
+
+	/**
+	 * @param int $times
+	 * @return VerificationMode
+	 */
+	static function atMost($times) {
+		return new AtMost($times);
 	}
 
 	/**
@@ -645,14 +685,22 @@ class Phockito_VerifyBuilder {
 			}
 		}
 
-		if (preg_match('/([0-9]+)\+/', $this->times, $match)) {
-			if ($count >= (int)$match[1]) return;
+		if ($this->times instanceof VerificationMode) {
+			$verificationMode = $this->times;
+		}
+		else if (preg_match('/([0-9]+)\+/', $this->times, $match)) {
+			$verificationMode = Phockito::atLeast((int)$match[1]);
 		}
 		else {
-			if ($count == $this->times) return;
+			$verificationMode = Phockito::times($this->times);
 		}
 
-		$message  = "Failed asserting that method $called was called {$this->times} times - actually called $count times.\n";
+		if ($verificationMode->verify($count)) {
+			return;
+		}
+		$conditionDescription = $verificationMode->describeCondition();
+
+		$message  = "Failed asserting that method $called $conditionDescription - actually called $count times.\n";
 		$message .= "Wanted call:\n";
 		$message .= print_r($args, true);
 		
