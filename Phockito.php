@@ -146,7 +146,7 @@ class Phockito {
 		// Look up any stubbed responses
 		if (isset(self::$_responses[$instance][$method])) {
 			// Find the first one that matches the called-with arguments
-			foreach (self::$_responses[$instance][$method] as $i => &$matcher) {
+			foreach (self::$_responses[$instance][$method] as &$matcher) {
 				if (self::_arguments_match($class, $method, $matcher['args'], $args)) {
 					// Consume the next response - except the last one, which repeats indefinitely
 					if (count($matcher['steps']) > 1) return array_shift($matcher['steps']);
@@ -154,8 +154,11 @@ class Phockito {
 				}
 			}
 		}
+
+		return null;
 	}
 
+	/** @noinspection PhpInconsistentReturnPointsInspection */
 	public static function __perform_response($response, $args) {
 		if ($response['action'] == 'return') return $response['value'];
 		else if ($response['action'] == 'throw') {
@@ -390,7 +393,8 @@ EOT;
 
 		// If we've been given a type registrar, call it (we need to do this even if class exists, since PHPUnit resets globals, possibly de-registering between tests)
 		$type_registrar = self::$type_registrar;
-		if ($type_registrar) $type_registrar::register_double($mockClass, $class, self::$_is_interface[$class]);
+		if ($type_registrar) /** @noinspection PhpUndefinedMethodInspection */
+			$type_registrar::register_double($mockClass, $class, self::$_is_interface[$class]);
 
 		return $mockClass;
 	}
@@ -408,7 +412,7 @@ EOT;
 	}
 
 	/**
-	 * Aternative name for mock_instance
+	 * Alternative name for mock_instance
 	 */
 	static function mock($class) {
 		return self::mock_instance($class);
@@ -419,7 +423,8 @@ EOT;
 
 		// If we've been given a type registrar, call it (we need to do this even if class exists, since PHPUnit resets globals, possibly de-registering between tests)
 		$type_registrar = self::$type_registrar;
-		if ($type_registrar) $type_registrar::register_double($spyClass, $class, self::$_is_interface[$class]);
+		if ($type_registrar) /** @noinspection PhpUndefinedMethodInspection */
+			$type_registrar::register_double($spyClass, $class, self::$_is_interface[$class]);
 
 		return $spyClass;
 	}
@@ -459,7 +464,8 @@ EOT;
 	 * When builder. Starts stubbing the method called to build the argument passed to when
 	 *
 	 * @static
-	 * @return Phockito_WhenBuilder
+	 * @param Phockito_MockMarker|Object|null $arg
+	 * @return Phockito_WhenBuilder|Object
 	 */
 	static function when($arg = null) {
 		if ($arg instanceof Phockito_MockMarker) {
@@ -476,9 +482,9 @@ EOT;
 	 * DSL object that catches the method to verify
 	 *
 	 * @static
-	 * @param Phockito_Mock $mock - The mock instance to verify
-	 * @param string $times - The number of times the method should be called, either a number, or a number followed by "+"
-	 * @return Phockito_VerifyBuilder
+	 * @param Phockito_MockMarker|Object $mock - The mock instance to verify
+	 * @param string|int $times - The number of times the method should be called, either a number, or a number followed by "+"
+	 * @return mixed
 	 */
 	static function verify($mock, $times = 1) {
 		return new Phockito_VerifyBuilder($mock->__phockito_class, $mock->__phockito_instanceid, $times);
@@ -487,7 +493,8 @@ EOT;
 	/**
 	 * Reset a mock instance. Forget all calls and stubbed responses for a given instance
 	 * @static
-	 * @param Phockito_Mock $mock - The mock instance to reset
+	 * @param Phockito_MockMarker|Object $mock - The mock instance to reset
+	 * @param string $method
 	 */
 	static function reset($mock, $method = null) {
 		// Get the instance ID. Only resets instance-specific info ATM
@@ -506,15 +513,18 @@ EOT;
 	/**
 	 * Includes the Hamcrest matchers. You don't have to, but if you don't you can't to nice generic stubbing and verification
 	 * @static
-	 * @param bool $as_globals - When true (the default) the hamcrest matchers are available as global functions. If false, they're only available as static methods on Hamcrest_Matchers
+	 * @param bool $include_globals
+	 * @internal param bool $as_globals - When true (the default) the hamcrest matchers are available as global functions. If false, they're only available as static methods on Hamcrest_Matchers
 	 */
 	static function include_hamcrest($include_globals = true) {
 		set_include_path(get_include_path().PATH_SEPARATOR.dirname(__FILE__).'/hamcrest-php/hamcrest');
 		
 		if ($include_globals) {
+			/** @noinspection PhpIncludeInspection */
 			require_once('Hamcrest.php');
 			require_once('HamcrestTypeBridge_Globals.php');
 		} else {
+			/** @noinspection PhpIncludeInspection */
 			require_once('Hamcrest/Matchers.php');
 			require_once('HamcrestTypeBridge.php');
 		}
@@ -523,6 +533,9 @@ EOT;
 
 /**
  * Marks all mocks for easy identification
+ *
+ * @property mixed __phockito_instanceid
+ * @property mixed __phockito_class
  */
 interface Phockito_MockMarker {
 
