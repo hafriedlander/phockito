@@ -56,7 +56,7 @@ class PhockitoTest_StubResponse extends Exception {}
 class PhockitoTest extends PHPUnit_Framework_TestCase {
 
 	static function setUpBeforeClass() {
-		Phockito_VerifyBuilder::$exception_class = 'PhockitoTest_VerificationFailure';
+		Phockito_UnsuccessfulVerificationReporter::$exception_class = 'PhockitoTest_VerificationFailure';
 	}
 
 	/** Test creation of mock classes **/
