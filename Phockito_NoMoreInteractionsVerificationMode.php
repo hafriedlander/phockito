@@ -69,15 +69,12 @@ class BacktraceFormatter {
 		$invocationOperator = isset($info['type']) ? $info['type'] : '#';
 		$classAndInvocation = isset($info['class']) ? $info['class'] . $invocationOperator : '';
 		$function = isset($info['function']) ? $info['function'] : 'No function';
-		$args = $this->_formatArgs($info['args']);
+		$args = $this->_formatArgs(isset($info['args']) ? $info['args'] : array());
 
 		return "#$index $file($line): $classAndInvocation$function($args)";
 	}
 
 	private function _formatArgs($args) {
-		if (!isset($args)) {
-			return '';
-		}
 		$args = array_map(function($arg) { return $this->_truncateArg($this->_formatArg($arg)); }, $args);
 		return implode(', ', $args);
 	}
