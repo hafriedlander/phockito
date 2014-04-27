@@ -12,6 +12,25 @@ class Phockito_NoMoreInteractions implements Phockito_VerificationMode {
 	}
 }
 
+class Phockito_Only implements Phockito_VerificationMode {
+	function verify(Phockito_VerificationContext $verificationContext) {
+
+		$allInvocations = $verificationContext->getAllInvocationsOnMock();
+		$matchingInvocations = $verificationContext->getMatchingInvocations();
+
+		$allInvocationsCount = count($allInvocations);
+		$matchingInvocationsCount = count($matchingInvocations);
+		if ($allInvocationsCount != 1 &&$matchingInvocationsCount > 0) {
+			return new Phockito_UnsuccessfulNoMoreInteractionsVerificationResult($matchingInvocations[0]);
+		} elseif ($allInvocationsCount != 1 || $matchingInvocationsCount == 0) {
+			$expectation = "called exactly once, and nothing else was";
+			return new Phockito_UnsuccessfulNumericalVerificationResult($verificationContext, $expectation);
+		}
+
+		return new Phockito_SuccessfulVerificationResult();
+	}
+}
+
 class Phockito_UnsuccessfulNoMoreInteractionsVerificationResult implements Phockito_UnsuccessfulVerificationResult {
 	/** @var Phockito_Invocation */
 	private $_invocation;

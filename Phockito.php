@@ -521,6 +521,10 @@ EOT;
 		return new Phockito_AtMost($times);
 	}
 
+	static function only() {
+		return new Phockito_Only();
+	}
+
 	/**
 	 * Reset a mock instance. Forget all calls and stubbed responses for a given instance
 	 * @static

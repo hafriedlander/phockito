@@ -530,6 +530,47 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		Phockito::verify($mock, Phockito::atMost(2))->Foo();
 	}
 
+	/**   Against only() */
+
+	function testSingleCallCorrectlyPassesVerificationAgainstOnly() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::only())->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testDifferentCallCorrectlyFailsVerificationAgainstOnly() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Bar();
+		Phockito::verify($mock, Phockito::only())->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testNoCallsCorrectlyFailsVerificationAgainstOnly() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::verify($mock, Phockito::only())->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testTwoCallsCorrectlyFailsVerificationAgainstOnly() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::only())->Foo();
+	}
+
+	function testSingleCallsToMultipleMocksCorrectlyPassesVerificationAgainstOnly() {
+		$mock1 = Phockito::mock('PhockitoTest_MockMe');
+		$mock2 = Phockito::mock('PhockitoTest_MockMe');
+		$mock1->Foo();
+		$mock2->Bar();
+		Phockito::verify($mock1, Phockito::only())->Foo();
+		Phockito::verify($mock2, Phockito::only())->Bar();
+	}
+
 	/**
 	 * @expectedException PHPUnit_Framework_Error
 	 * @expectedExceptionCode E_USER_ERROR

@@ -44,3 +44,7 @@ function calledAtLeastOnce() {
 function calledAtMost($times) {
 	return Phockito::atMost($times);
 }
+
+function calledOnly() {
+	return Phockito::only();
+}

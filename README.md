@@ -152,7 +152,7 @@ cannot be handled in a type-safe way.
 #### Verify 'times' argument changed
 
 In Mockito, the 'times' argument to verify is an object of interface VerificationMode. Phockito only supports a subset
-of Mockito's VerificationMode implementations: `times()`, `never()`, `atLeast()`, `atLeastOnce()`, `atMost()`.
+of Mockito's VerificationMode implementations: `times()`, `never()`, `atLeast()`, `atLeastOnce()`, `atMost()`, `only()`.
 
 The verification modes in Phockito's global functions are named as calledX (e.g. `calledAtLeastOnce()`, as opposed to
 `Phockito::atLeastOnce()`) to avoid conflicts with other global functions (such as those provided by Hamcrest).
