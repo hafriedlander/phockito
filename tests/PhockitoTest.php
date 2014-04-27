@@ -56,7 +56,7 @@ class PhockitoTest_StubResponse extends Exception {}
 class PhockitoTest extends PHPUnit_Framework_TestCase {
 
 	static function setUpBeforeClass() {
-		Phockito_VerifyBuilder::$exception_class = 'PhockitoTest_VerificationFailure';
+		Phockito_UnsuccessfulVerificationReporter::$exception_class = 'PhockitoTest_VerificationFailure';
 	}
 
 	/** Test creation of mock classes **/
@@ -422,6 +422,153 @@ class PhockitoTest extends PHPUnit_Framework_TestCase {
 		$mock = Phockito::mock('PhockitoTest_MockMe');
 		$mock->Foo();
 		Phockito::verify($mock, '2+')->Foo();
+	}
+
+	/**   Against times() */
+
+	function testTwoCallsCorrectlyPassesVerificationAgainstExactlyTwo() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::times(2))->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testThreeCallsCorrectlyFailsVerificationAgainstExactlyTwo() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::times(2))->Foo();
+	}
+
+	/**   Against never() */
+
+	function testNoCallsCorrectlyPassesVerificationAgainstNever() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::verify($mock, Phockito::never())->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testSingleCallCorrectlyFailsVerificationAgainstNever() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::never())->Foo();
+	}
+
+	/**   Against atLeast() */
+
+	function testTwoCallsCorrectlyPassesVerificationAgainstAtLeastTwo() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::atLeast(2))->Foo();
+	}
+
+	function testThreeCallsCorrectlyPassesVerificationAgainstAtLeastTwo() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::atLeast(2))->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testSingleCallCorrectlyFailsVerificationAgainstAtLeastTwo() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::atLeast(2))->Foo();
+	}
+
+	/**   Against atLeastOnce() */
+
+	function testTwoCallsCorrectlyPassesVerificationAgainstAtLeastOnce() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::atLeastOnce())->Foo();
+	}
+
+	function testSingleCallsCorrectlyPassesVerificationAgainstAtLeastOnce() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::atLeastOnce())->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testNoCallsCorrectlyFailsVerificationAgainstAtLeastOnce() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::verify($mock, Phockito::atLeastOnce())->Foo();
+	}
+
+	/**   Against atMost() */
+
+	function testTwoCallsCorrectlyPassesVerificationAgainstAtMostTwo() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::atMost(2))->Foo();
+	}
+
+	function testSingleCallCorrectlyPassesVerificationAgainstAtMostTwo() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::atMost(2))->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testThreeCallsCorrectlyFailsVerificationAgainstAtMostTwo() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::atMost(2))->Foo();
+	}
+
+	/**   Against only() */
+
+	function testSingleCallCorrectlyPassesVerificationAgainstOnly() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::only())->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testDifferentCallCorrectlyFailsVerificationAgainstOnly() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Bar();
+		Phockito::verify($mock, Phockito::only())->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testNoCallsCorrectlyFailsVerificationAgainstOnly() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		Phockito::verify($mock, Phockito::only())->Foo();
+	}
+
+	/** @expectedException PhockitoTest_VerificationFailure
+	 */
+	function testTwoCallsCorrectlyFailsVerificationAgainstOnly() {
+		$mock = Phockito::mock('PhockitoTest_MockMe');
+		$mock->Foo();
+		$mock->Foo();
+		Phockito::verify($mock, Phockito::only())->Foo();
+	}
+
+	function testSingleCallsToMultipleMocksCorrectlyPassesVerificationAgainstOnly() {
+		$mock1 = Phockito::mock('PhockitoTest_MockMe');
+		$mock2 = Phockito::mock('PhockitoTest_MockMe');
+		$mock1->Foo();
+		$mock2->Bar();
+		Phockito::verify($mock1, Phockito::only())->Foo();
+		Phockito::verify($mock2, Phockito::only())->Bar();
 	}
 
 	/**

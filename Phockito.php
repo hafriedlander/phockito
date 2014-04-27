@@ -1,5 +1,8 @@
 <?php
 
+require_once('Phockito_NumericalVerificationModes.php');
+require_once('Phockito_NoMoreInteractionsVerificationMode.php');
+
 /**
  * Phockito - Mockito for PHP
  *
@@ -60,8 +63,8 @@ class Phockito {
 	/** Each mock instance needs a unique string ID, which we build by incrementing this counter @var int */
 	public static $_instanceid_counter = 0;
 
-	/** Array of most-recent-first calls. Each item is an array of (instance, method, args) named hashes. @var array */
-	public static $_call_list = array();
+	/** Array of most-recent-first calls. Each item is an array of (instance, method, args) named hashes. @var Phockito_Invocation[] */
+	public static $_invocation_list = array();
 
 	/**
 	 * Array of stubs responses
@@ -136,12 +139,8 @@ class Phockito {
 	 */
 	public static function __called($class, $instance, $method, $args) {
 		// Record the call as most recent first
-		array_unshift(self::$_call_list, array(
-			'class' => $class,
-			'instance' => $instance,
-			'method' => $method,
-			'args' => $args
-		));
+		$invocation = new Phockito_Invocation($class, $instance, $method, $args, debug_backtrace(0));
+		array_unshift(self::$_invocation_list, $invocation);
 
 		// Look up any stubbed responses
 		if (isset(self::$_responses[$instance][$method])) {
@@ -225,11 +224,9 @@ class Phockito {
 		$php[] = <<<EOT
 $namespaceDeclaration
 class $mockerShortName $extends $mockedShortName $marker {
-  public \$__phockito_class;
   public \$__phockito_instanceid;
 
   function __construct() {
-    \$this->__phockito_class = $mockedClassString;
     \$this->__phockito_instanceid = $mockedClassString.':'.(++{$phockito}::\$_instanceid_counter);
   }
 EOT;
@@ -466,8 +463,9 @@ EOT;
 			return new Phockito_WhenBuilder($arg->__phockito_instanceid);
 		}
 		else {
-			$method = array_shift(self::$_call_list);
-			return new Phockito_WhenBuilder($method['instance'], $method['method'], $method['args']);
+			/** @var Phockito_Invocation $invocation */
+			$invocation = array_shift(self::$_invocation_list);
+			return new Phockito_WhenBuilder($invocation->instanceId, $invocation->methodName, $invocation->args);
 		}
 	}
 
@@ -477,11 +475,54 @@ EOT;
 	 *
 	 * @static
 	 * @param Phockito_Mock $mock - The mock instance to verify
-	 * @param string $times - The number of times the method should be called, either a number, or a number followed by "+"
+	 * @param string|int|Phockito_VerificationMode $mode - The verification mode, number, or number followed by '+'
+	 * 													   describing how many times the methods should be called
 	 * @return Phockito_VerifyBuilder
 	 */
-	static function verify($mock, $times = 1) {
-		return new Phockito_VerifyBuilder($mock->__phockito_class, $mock->__phockito_instanceid, $times);
+	static function verify($mock, $mode = 1) {
+		return new Phockito_VerifyBuilder($mock->__phockito_instanceid, $mode);
+	}
+
+	/**
+	 * @param int $times
+	 * @return Phockito_VerificationMode
+	 */
+	static function times($times) {
+		return new Phockito_Times($times);
+	}
+
+	/**
+	 * @return Phockito_VerificationMode
+	 */
+	static function never() {
+		return self::times(0);
+	}
+
+	/**
+	 * @param int $times
+	 * @return Phockito_VerificationMode
+	 */
+	static function atLeast($times) {
+		return new Phockito_AtLeast($times);
+	}
+
+	/**
+	 * @return Phockito_VerificationMode
+	 */
+	static function atLeastOnce() {
+		return self::atLeast(1);
+	}
+
+	/**
+	 * @param int $times
+	 * @return Phockito_VerificationMode
+	 */
+	static function atMost($times) {
+		return new Phockito_AtMost($times);
+	}
+
+	static function only() {
+		return new Phockito_Only();
 	}
 
 	/**
@@ -498,8 +539,33 @@ EOT;
 		else unset(self::$_responses[$instance]);
 		
 		// Remove all call history
-		foreach (self::$_call_list as $i => $call) {
-			if ($call['instance'] == $instance && ($method == null || $call['method'] == $method)) array_splice(self::$_call_list, $i, 1);
+		/** @var Phockito_Invocation $invocation */
+		foreach (self::$_invocation_list as $i => $invocation) {
+			if (($method && $invocation->matchesInstanceAndMethod($instance, $method)) ||
+				($method == null && $invocation->matchesInstance($instance))
+			) {
+				array_splice(self::$_invocation_list, $i, 1);
+			}
+		}
+	}
+
+	/**
+	 * @param Phockito_MockMarker|Object|array $mocks
+	 */
+	static function verifyNoMoreInteractions($mocks) {
+		if (!is_array($mocks)) {
+			$mocks = array($mocks);
+		}
+
+		$noMoreInteractionsVerificationMode = new Phockito_NoMoreInteractions();
+
+		/** @var Phockito_MockMarker $mock */
+		foreach ($mocks as $mock) {
+			$verificationContext = new Phockito_VerificationContext($mock->__phockito_instanceid, null, array());
+			$verificationResult = $noMoreInteractionsVerificationMode->verify($verificationContext);
+			if ($verificationResult instanceof Phockito_UnsuccessfulVerificationResult) {
+				(new Phockito_UnsuccessfulVerificationReporter())->reportUnsuccessfulVerification($verificationResult);
+			}
 		}
 	}
 
@@ -617,55 +683,199 @@ class Phockito_WhenBuilder {
  * or just an Exception if PHPUnit doesn't exist
  */
 class Phockito_VerifyBuilder {
-
-	static $exception_class = null;
-
-	protected $class;
 	protected $instance;
-	protected $times;
+	protected $mode;
 
-	function __construct($class, $instance, $times) {
-		$this->class = $class;
+	function __construct($instance, $mode) {
 		$this->instance = $instance;
-		$this->times = $times;
-
-		if (self::$exception_class === null) {
-			if (class_exists('PHPUnit_Framework_AssertionFailedError')) self::$exception_class = "PHPUnit_Framework_AssertionFailedError";
-			else self::$exception_class = "Exception";
-		}
-
+		$this->mode = $mode;
 	}
 
 	function __call($called, $args) {
-		$count = 0;
-
-		foreach (Phockito::$_call_list as $call) {
-			if ($call['instance'] == $this->instance && $call['method'] == $called && Phockito::_arguments_match($this->class, $called, $args, $call['args'])) {
-				$count++;
-			}
+		if ($this->mode instanceof Phockito_VerificationMode) {
+			$verificationMode = $this->mode;
 		}
-
-		if (preg_match('/([0-9]+)\+/', $this->times, $match)) {
-			if ($count >= (int)$match[1]) return;
+		else if (preg_match('/([0-9]+)\+/', $this->mode, $match)) {
+			$verificationMode = Phockito::atLeast((int)$match[1]);
 		}
 		else {
-			if ($count == $this->times) return;
+			$verificationMode = Phockito::times($this->mode);
 		}
 
-		$message  = "Failed asserting that method $called was called {$this->times} times - actually called $count times.\n";
-		$message .= "Wanted call:\n";
-		$message .= print_r($args, true);
-		
-		$message .= "Calls:\n";
+		$verificationContext = new Phockito_VerificationContext($this->instance, $called, $args);
 
-		foreach (Phockito::$_call_list as $call) {
-			if ($call['instance'] == $this->instance && $call['method'] == $called) {
-				$message .= print_r($call['args'], true);
-			}
+		$verificationResult = $verificationMode->verify($verificationContext);
+
+		if ($verificationResult instanceof Phockito_SuccessfulVerificationResult) {
+			$verificationContext->markMatchingInvocationsAsVerified();
+			return;
 		}
 
+		(new Phockito_UnsuccessfulVerificationReporter())->reportUnsuccessfulVerification($verificationResult);
+	}
+}
+
+class Phockito_UnsuccessfulVerificationReporter {
+	static $exception_class = null;
+
+	function __construct() {
+		if (self::$exception_class === null) {
+			self::$exception_class = class_exists('PHPUnit_Framework_AssertionFailedError') ?
+				"PHPUnit_Framework_AssertionFailedError" :
+				"Exception";
+		}
+	}
+
+	function reportUnsuccessfulVerification(Phockito_UnsuccessfulVerificationResult $verificationResult) {
+		$message = $verificationResult->describeConstraintFailure();
 		$exceptionClass = self::$exception_class;
 		throw new $exceptionClass($message);
 	}
 }
 
+class Phockito_VerificationContext {
+	private $_mockInstanceId;
+	private $_methodToVerify;
+	private $_argumentsToVerify;
+
+	/**
+	 * @param string $mockInstanceId
+	 * @param string $methodToVerify
+	 * @param array $argumentsToVerify
+	 */
+	function __construct($mockInstanceId, $methodToVerify, array $argumentsToVerify) {
+		$this->_mockInstanceId = $mockInstanceId;
+		$this->_methodToVerify = $methodToVerify;
+		$this->_argumentsToVerify = $argumentsToVerify;
+	}
+
+	/**
+	 * @return Phockito_Invocation[]
+	 */
+	function getAllInvocationsOnMock() {
+		return $invocationsForMock = array_filter(
+			Phockito::$_invocation_list,
+			function(Phockito_Invocation $invocation) {
+				return $invocation->matchesInstance($this->_mockInstanceId);
+			}
+		);
+	}
+
+	/**
+	 * @return Phockito_Invocation[]
+	 */
+	function getMatchingInvocations() {
+		return $invocationsForMock = array_filter(
+			Phockito::$_invocation_list,
+			function(Phockito_Invocation $invocation) {
+				return $invocation->matchesInstanceAndMethod($this->_mockInstanceId, $this->_methodToVerify)
+					&& $invocation->matchesArguments($this->_argumentsToVerify);
+			}
+		);
+	}
+
+	function markMatchingInvocationsAsVerified() {
+		foreach ($this->getMatchingInvocations() as $invocation) {
+			$invocation->verified = true;
+		}
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getMethodToVerify() {
+		return $this->_methodToVerify;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getArgumentsToVerify() {
+		return $this->_argumentsToVerify;
+	}
+}
+
+class Phockito_Invocation {
+	public $className;
+	public $instanceId;
+	public $methodName;
+	public $args;
+	public $backtrace;
+
+	public $verified = false;
+
+	function __construct($className, $instanceId, $methodName, $args, array $backtrace) {
+		$this->className = $className;
+		$this->instanceId = $instanceId;
+		$this->methodName = $methodName;
+		$this->args = $args;
+		$this->backtrace = $backtrace;
+	}
+
+	public function matchesInstance($instanceId) {
+		return $this->instanceId == $instanceId;
+	}
+
+	public function matchesInstanceAndMethod($instanceId, $methodName) {
+		return $this->matchesInstance($instanceId) && $this->methodName == $methodName;
+	}
+
+	/**
+	 * Checks if the given arguments list matches that of the invocation. Simple serialized check for now, to be
+	 * replaced by something that can handle anyString etc matchers later
+	 */
+	public function matchesArguments($args) {
+		$invocationArgs = $this->args;
+		$passedArgs = $args;
+
+		// See if there are any defaults for the given method
+		if (isset(Phockito::$_defaults[$this->className][$this->methodName])) {
+			// If so, get them
+			$defaults = Phockito::$_defaults[$this->className][$this->methodName];
+			// And merge them with the passed args
+			$invocationArgs = $invocationArgs + $defaults;
+			$passedArgs = $passedArgs + $defaults;
+		}
+
+		return $this->_argumentListsMatch($invocationArgs, $passedArgs);
+	}
+
+	private function _argumentListsMatch($invocationArgs, $passedArgs) {
+		// If two argument arrays are different lengths, automatic fail
+		if (count($invocationArgs) != count($passedArgs)) return false;
+
+		// Step through each item
+		$argIndex = count($invocationArgs);
+		while ($argIndex--) {
+			$invocationArg = $invocationArgs[$argIndex];
+			$passedArg = $passedArgs[$argIndex];
+
+			if (!$this->_argumentsMatch($invocationArg, $passedArg)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private function _argumentsMatch($invocationArg, $passedArg) {
+		// If the argument in $invocationArg is a hamcrest matcher, call match on it.
+		// WONTFIX: Can't check if function was passed a hamcrest matcher
+		if (interface_exists('Hamcrest_Matcher') &&
+			($invocationArg instanceof Hamcrest_Matcher || isset($invocationArg->__phockito_matcher))
+		) {
+			// The matcher can either be passed directly, or wrapped in a mock (for type safety reasons)
+			$matcher = null;
+			if ($invocationArg instanceof Hamcrest_Matcher) {
+				$matcher = $invocationArg;
+			} elseif (isset($invocationArg->__phockito_matcher)) {
+				$matcher = $invocationArg->__phockito_matcher;
+			}
+			return $matcher != null && !$matcher->matches($passedArg);
+		}
+		// Otherwise check for equality by checking the equality of the serialized version
+		else {
+			return serialize($invocationArg) != serialize($passedArg);
+		}
+	}
+}
