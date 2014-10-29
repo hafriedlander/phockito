@@ -21,8 +21,8 @@ $iterator->asort();
 Phockito::verify($iterator)->append('Test');
 // 1 is default - can also do 2, 3  for exact numbers, or 1+ for at least one, or 0 for never
 Phockito::verify($iterator, 1)->asort();
-// Verify without caring what parameters were used
-Phockito::verify($iterator, 1)->append();
+// Verify without caring what parameters were used, just pass a third parameter (ignore_arguments) with value true
+Phockito::verify($iterator, 1, true)->append();
 ```
 
 If PHPUnit is available, on failure verify throws a `PHPUnit_Framework_AssertionFailedError` (looks like an assertion failure),
