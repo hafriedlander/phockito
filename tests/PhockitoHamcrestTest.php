@@ -44,4 +44,15 @@ class PhockitoHamcrestTest extends PHPUnit_Framework_TestCase {
 
 		$this->assertEquals($mock->Baz(new PhockitoHamcrestTest_PassMe()), 'PassMe');
 	}
+
+    function testVerifyIgnoreArguments() {
+        $mock = Phockito::mock('PhockitoHamcrestTest_MockMe');
+
+        $mock->Bar('String');
+        $mock->Bar(1);
+        $mock->Bar(new PhockitoHamcrestTest_MockMe());
+        $mock->Bar(null);
+
+        Phockito::verify($mock, 4, true)->Bar();
+    }
 }
