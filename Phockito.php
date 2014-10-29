@@ -471,24 +471,26 @@ EOT;
 		}
 	}
 
-	/**
-	 * Verify builder. Takes a mock instance and an optional number of times to verify against. Returns a
-	 * DSL object that catches the method to verify
-	 *
-	 * @static
-	 * @param Phockito_Mock $mock - The mock instance to verify
-	 * @param string $times - The number of times the method should be called, either a number, or a number followed by "+"
-	 * @return Phockito_VerifyBuilder
-	 */
-	static function verify($mock, $times = 1) {
-		return new Phockito_VerifyBuilder($mock->__phockito_class, $mock->__phockito_instanceid, $times);
+    /**
+     * Verify builder. Takes a mock instance and an optional number of times to verify against. Returns a
+     * DSL object that catches the method to verify
+     *
+     * @static
+     * @param Phockito_Mock $mock - The mock instance to verify
+     * @param int|string $times - The number of times the method should be called, either a number, or a number followed by "+"
+     * @param Boolean $ignore_arguments - The ignore arguments parameter is used to set the function to verify with or without method arguments
+     * @return Phockito_VerifyBuilder
+     */
+	static function verify($mock, $times = 1, $ignore_arguments = false) {
+		return new Phockito_VerifyBuilder($mock->__phockito_class, $mock->__phockito_instanceid, $times, $ignore_arguments);
 	}
 
-	/**
-	 * Reset a mock instance. Forget all calls and stubbed responses for a given instance
-	 * @static
-	 * @param Phockito_Mock $mock - The mock instance to reset
-	 */
+    /**
+     * Reset a mock instance. Forget all calls and stubbed responses for a given instance
+     * @static
+     * @param Phockito_Mock $mock - The mock instance to reset
+     * @param null $method
+     */
 	static function reset($mock, $method = null) {
 		// Get the instance ID. Only resets instance-specific info ATM
 		$instance = $mock->__phockito_instanceid;
@@ -623,24 +625,26 @@ class Phockito_VerifyBuilder {
 	protected $class;
 	protected $instance;
 	protected $times;
+    protected $ignore_arguments;
 
-	function __construct($class, $instance, $times) {
+    function __construct($class, $instance, $times, $ignore_arguments) {
 		$this->class = $class;
 		$this->instance = $instance;
 		$this->times = $times;
+        $this->ignore_arguments = $ignore_arguments;
 
 		if (self::$exception_class === null) {
 			if (class_exists('PHPUnit_Framework_AssertionFailedError')) self::$exception_class = "PHPUnit_Framework_AssertionFailedError";
 			else self::$exception_class = "Exception";
 		}
-
-	}
+    }
 
 	function __call($called, $args) {
 		$count = 0;
 
 		foreach (Phockito::$_call_list as $call) {
-			if ($call['instance'] == $this->instance && $call['method'] == $called && Phockito::_arguments_match($this->class, $called, $args, $call['args'])) {
+			if ($call['instance'] == $this->instance && $call['method'] == $called &&
+                    ($this->ignore_arguments || Phockito::_arguments_match($this->class, $called, $args, $call['args']))) {
 				$count++;
 			}
 		}
