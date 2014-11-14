@@ -7,9 +7,15 @@
         {
             "name": "Hamish Friedlander",
             "email": "hamish@silverstripe.com"
+        },
+        {
+            "name": "Lukas Pająk",
+            "email": "lupajak@gmail.com"
         }
     ],
     "autoload": {
-        "classmap": ["."]
+        "psr-0": {
+            "": "src"
+        }
     }
 }

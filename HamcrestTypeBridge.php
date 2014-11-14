@@ -1,5 +1,7 @@
 <?php
 
+use Phockito\Phockito;
+
 class HamcrestTypeBridge {
 	/**
 	 * Creates a special mock of $type which wraps the given $matcher.
