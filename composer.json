@@ -17,5 +17,8 @@
         "psr-0": {
             "": "src"
         }
+    },
+    "require": {
+        "hamcrest/hamcrest-php": "~1.2"
     }
 }

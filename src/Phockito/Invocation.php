@@ -3,6 +3,8 @@
 namespace Phockito;
 
 
+use Hamcrest\Matcher;
+
 class Invocation
 {
     public $className;
@@ -81,12 +83,12 @@ class Invocation
     {
         // If the argument in $invocationArg is a hamcrest matcher, call match on it.
         // WONTFIX: Can't check if function was passed a hamcrest matcher
-        if (interface_exists('Hamcrest_Matcher') &&
-            ($invocationArg instanceof Hamcrest_Matcher || isset($invocationArg->__phockito_matcher))
+        if (interface_exists(Matcher::class) &&
+            ($invocationArg instanceof Matcher || isset($invocationArg->__phockito_matcher))
         ) {
             // The matcher can either be passed directly, or wrapped in a mock (for type safety reasons)
             $matcher = null;
-            if ($invocationArg instanceof Hamcrest_Matcher) {
+            if ($invocationArg instanceof Matcher) {
                 $matcher = $invocationArg;
             } elseif (isset($invocationArg->__phockito_matcher)) {
                 $matcher = $invocationArg->__phockito_matcher;

@@ -3,6 +3,7 @@
 namespace Phockito;
 
 
+use Hamcrest\Matcher;
 use Phockito\VerificationMode\AtLeast;
 use Phockito\VerificationMode\AtMost;
 use Phockito\VerificationMode\Only;
@@ -138,13 +139,11 @@ class Phockito
             $v = $b[$i];
 
             // If the argument in $a is a hamcrest matcher, call match on it. WONTFIX: Can't check if function was passed a hamcrest matcher
-            if (interface_exists(
-                    'Hamcrest_Matcher'
-                ) && ($u instanceof Hamcrest_Matcher || isset($u->__phockito_matcher))
+            if (interface_exists(Matcher::class) && ($u instanceof Matcher || isset($u->__phockito_matcher))
             ) {
                 // The matcher can either be passed directly, or wrapped in a mock (for type safety reasons)
                 $matcher = null;
-                if ($u instanceof Hamcrest_Matcher) {
+                if ($u instanceof Matcher) {
                     $matcher = $u;
                 } elseif (isset($u->__phockito_matcher)) {
                     $matcher = $u->__phockito_matcher;
@@ -685,28 +684,6 @@ EOT;
                 (new UnsuccessfulVerificationReporter())->reportUnsuccessfulVerification($verificationResult);
             }
         }
-    }
-
-    /**
-     * Includes the Hamcrest matchers. You don't have to, but if you don't you can't to nice generic stubbing and verification
-     * @static
-     * @deprecated
-     * @param bool $include_globals
-     * @internal param bool $as_globals - When true (the default) the hamcrest matchers are available as global functions. If false, they're only available as static methods on Hamcrest_Matchers
-     */
-    static function include_hamcrest($include_globals = true)
-    {
-        /*set_include_path(get_include_path() . PATH_SEPARATOR . dirname(__FILE__) . '/hamcrest-php/hamcrest');
-
-        if ($include_globals) {
-            /** @noinspection PhpIncludeInspection * /
-            require_once('Hamcrest.php');
-            require_once('HamcrestTypeBridge_Globals.php');
-        } else {
-            /** @noinspection PhpIncludeInspection * /
-            require_once('Hamcrest/Matchers.php');
-            require_once('HamcrestTypeBridge.php');
-        }*/
     }
 }
 

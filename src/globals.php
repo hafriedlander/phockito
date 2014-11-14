@@ -1,5 +1,7 @@
 <?php
 
+use Hamcrest\Matcher;
+use Phockito\HamcrestTypeBridge;
 use Phockito\MockMarker;
 use Phockito\Phockito;
 use Phockito\VerificationMode\VerificationMode;
@@ -91,4 +93,13 @@ function atMost($times) {
  */
 function only() {
 	return Phockito::only();
+}
+
+/**
+ * @param $type
+ * @param Matcher $matcher
+ * @return Object
+ */
+function argOfTypeThat($type, Matcher $matcher) {
+    return HamcrestTypeBridge::argOfTypeThat($type, $matcher);
 }
