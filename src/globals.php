@@ -31,7 +31,7 @@ function spy($class) {
 /**
  * When builder. Starts stubbing the method called to build the argument passed to when
  *
- * @param MockMarker|Object|null $arg
+ * @param MockMarker|object|mixed|null $arg
  * @return WhenBuilder|Object
  */
 function when($arg) {
@@ -42,7 +42,7 @@ function when($arg) {
  * Verify builder. Takes a mock instance and an optional number of times to verify against. Returns a
  * DSL object that catches the method to verify
  *
- * @param MockMarker|Object $mock - The mock instance to verify
+ * @param MockMarker|object $mock - The mock instance to verify
  * @param string|int $times - The number of times the method should be called, either a number, or a number followed by "+"
  * @return mixed|VerifyBuilder
  */

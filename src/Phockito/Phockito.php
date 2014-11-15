@@ -245,9 +245,6 @@ class Phockito
             );
         }
 
-        // How to get a reference to the Phockito class itself
-        $phockito = self::_has_namespaces() ? '\\Phockito' : 'Phockito';
-
         // Reflect on the mocked class
         $reflect = new ReflectionClass($mockedClass);
 
@@ -282,19 +279,21 @@ class Phockito
 
         // The only difference between mocking a class or an interface is how the mocking class extends from the mocked
         $extends = $reflect->isInterface() ? 'implements' : 'extends';
-        $marker = $reflect->isInterface() ? ", {$phockito}_MockMarker" : "implements {$phockito}_MockMarker";
+        $marker = $reflect->isInterface() ? ', \Phockito\MockMarker' : 'implements \Phockito\MockMarker';
 
         // When injecting the class as a string, need to escape the "\" character.
-        $mockedClassString = "'" . str_replace('\\', '\\\\', $mockedClass) . "'";
+        $mockedClassString = "'\\\\" . str_replace('\\', '\\\\', $mockedClass) . "'";
+        $mockedClassClass = '\\'.$mockedClass.'::class';
 
         // Add opening class stanza
         $php[] = <<<EOT
 $namespaceDeclaration
 class $mockerShortName $extends $mockedShortName $marker {
   public \$__phockito_instanceid;
+  public \$__phockito_class = $mockedClassClass;
 
   function __construct() {
-    \$this->__phockito_instanceid = $mockedClassString.':'.(++{$phockito}::\$_instanceid_counter);
+    \$this->__phockito_instanceid = $mockedClassString.':'.(++\\Phockito\\Phockito::\$_instanceid_counter);
   }
 EOT;
 
@@ -406,11 +405,13 @@ EOT;
     \$args = func_get_args();
 
     \$backtrace = debug_backtrace();
-    \$instance = \$backtrace[0]['type'] == '::' ? ('::'.$mockedClassString) : \$this->__phockito_instanceid;
 
-    \$response = {$phockito}::__called($mockedClassString, \$instance, '{$method->name}', \$args);
-  
-    \$result = \$response ? {$phockito}::__perform_response(\$response, \$args) : ($failover);
+    \$instance = \$backtrace[0]['type'] == '::' ? ('::'.$mockedClassClass) : \$this->__phockito_instanceid;
+
+    \$response = \\Phockito\\Phockito::__called($mockedClassClass, \$instance, '{$method->name}', \$args);
+
+    \$result = \$response ? \\Phockito\\Phockito::__perform_response(\$response, \$args) : ($failover);
+
     return \$result;
   }
 EOT;
@@ -422,9 +423,9 @@ EOT;
 
         $php[] = <<<EOT
   function __call(\$name, \$args) {
-    \$response = {$phockito}::__called($mockedClassString, \$this->__phockito_instanceid, \$name, \$args);
+    \$response = \\Phockito\\Phockito::__called($mockedClassString, \$this->__phockito_instanceid, \$name, \$args);
 
-    if (\$response) return {$phockito}::__perform_response(\$response, \$args);
+    if (\$response) return \\Phockito\\Phockito::__perform_response(\$response, \$args);
     else return $failover;
   }
 EOT;
@@ -443,9 +444,9 @@ EOT;
         $php[] = <<<EOT
   function __toString() {
     \$args = array();
-    \$response = {$phockito}::__called($mockedClassString, \$this->__phockito_instanceid, "__toString", \$args);
+    \$response = \\Phockito\\Phockito::__called($mockedClassString, \$this->__phockito_instanceid, "__toString", \$args);
 
-    if (\$response) return {$phockito}::__perform_response(\$response, \$args);
+    if (\$response) return \\Phockito\\Phockito::__perform_response(\$response, \$args);
     else return $failover;
   }
 EOT;
@@ -455,7 +456,6 @@ EOT;
 
         // Debug: uncomment to spit out the code we're about to compile to stdout
         // echo "\n" . implode("\n\n", $php) . "\n";
-
         eval(implode("\n\n", $php));
         return $mockerClass;
     }
@@ -559,7 +559,7 @@ EOT;
      * When builder. Starts stubbing the method called to build the argument passed to when
      *
      * @static
-     * @param MockMarker|Object|null $arg
+     * @param MockMarker|object|mixed|null $arg
      * @return WhenBuilder|Object
      */
     static function when($arg = null)
@@ -570,7 +570,7 @@ EOT;
 
             /** @var Invocation $invocation */
             $invocation = array_shift(self::$_invocation_list);
-            return new WhenBuilder($invocation->instanceId, $invocation->methodName, $invocation->args);
+            return new WhenBuilder($invocation->instanceId, $invocation->className, $invocation->methodName, $invocation->args);
         }
     }
 
@@ -579,7 +579,7 @@ EOT;
      * DSL object that catches the method to verify
      *
      * @static
-     * @param MockMarker|Object $mock - The mock instance to verify
+     * @param MockMarker|object $mock - The mock instance to verify
      * @param string|int $times - The number of times the method should be called, either a number, or a number followed by "+"
      * @return mixed|VerifyBuilder
      */

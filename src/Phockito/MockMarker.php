@@ -5,8 +5,8 @@ namespace Phockito;
 /**
  * Marks all mocks for easy identification
  *
- * @property mixed __phockito_instanceid
- * @property mixed __phockito_class
+ * @property integer __phockito_instanceid
+ * @property string __phockito_class
  */
 interface MockMarker
 {

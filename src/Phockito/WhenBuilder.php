@@ -17,7 +17,6 @@ namespace Phockito;
  */
 class WhenBuilder
 {
-
     protected $instance;
     protected $class;
     protected $method;
