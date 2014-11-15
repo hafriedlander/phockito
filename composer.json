@@ -1,15 +1,32 @@
 {
-	"name": "hafriedlander/phockito",
-	"description": "PHP Mocking framework inspired by Mockito for Java",
-	"keywords": ["mocks", "testing", "mockito"],
-	"license": "BSD-3-Clause",
-	"authors": [
-		{
-			"name": "Hamish Friedlander",
-			"email": "hamish@silverstripe.com"
-		}
-	],
-	 "autoload": {
-			"classmap": ["."]
-		}
+    "name": "crashuxx/phockito",
+    "description": "PHP Mocking framework inspired by Mockito for Java",
+    "keywords": ["mocks", "testing", "mockito"],
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Hamish Friedlander",
+            "email": "hamish@silverstripe.com"
+        },
+        {
+            "name": "Lukas Pająk",
+            "email": "lupajak@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-0": {
+            "": "tests"
+        }
+    },
+    "require": {
+        "hamcrest/hamcrest-php": "~1.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.3"
+    }
 }
