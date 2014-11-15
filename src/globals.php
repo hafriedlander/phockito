@@ -65,35 +65,35 @@ function never() {
 	return Phockito::never();
 }
 
-/**
+/* *
  * @param $times
  * @return VerificationMode
- */
+ * /
 function atLeast($times) {
 	return Phockito::atLeast($times);
-}
+}*/
 
-/**
+/* *
  * @return VerificationMode
- */
+ * /
 function atLeastOnce() {
 	return Phockito::atLeastOnce();
-}
+}*/
 
-/**
+/* *
  * @param $times
  * @return VerificationMode
- */
+ * /
 function atMost($times) {
 	return Phockito::atMost($times);
-}
+}*/
 
-/**
+/* *
  * @return VerificationMode
- */
+ * /
 function only() {
 	return Phockito::only();
-}
+}*/
 
 /**
  * @param $type
