@@ -63,5 +63,4 @@ class NamespaceTest extends PHPUnit_Framework_TestCase
 
         $this->assertThat($typeBridge, $this->isInstanceOf(MockMe::class));
     }
-
 }
