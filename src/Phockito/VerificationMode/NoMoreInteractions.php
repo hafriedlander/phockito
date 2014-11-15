@@ -1,9 +1,11 @@
 <?php
 
-namespace Phockito;
+namespace Phockito\VerificationMode;
 
 
-use Phockito\VerificationMode\VerificationMode;
+use Phockito\SuccessfulVerificationResult;
+use Phockito\UnsuccessfulNoMoreInteractionsVerificationResult;
+use Phockito\VerificationContext;
 
 class NoMoreInteractions implements VerificationMode
 {

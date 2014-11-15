@@ -6,6 +6,7 @@ namespace Phockito;
 use Hamcrest\Matcher;
 use Phockito\VerificationMode\AtLeast;
 use Phockito\VerificationMode\AtMost;
+use Phockito\VerificationMode\NoMoreInteractions;
 use Phockito\VerificationMode\Only;
 use Phockito\VerificationMode\Times;
 use Phockito\VerificationMode\VerificationMode;
@@ -283,7 +284,7 @@ class Phockito
 
         // When injecting the class as a string, need to escape the "\" character.
         $mockedClassString = "'\\\\" . str_replace('\\', '\\\\', $mockedClass) . "'";
-        $mockedClassClass = '\\'.$mockedClass.'::class';
+        $mockedClassClass = '\\' . $mockedClass . '::class';
 
         // Add opening class stanza
         $php[] = <<<EOT
