@@ -96,7 +96,7 @@ namespace {
 		}
 
 		function testCanBridgeNamespacedClass() {
-			$mockMatcher = new \Hamcrest_Core_IsInstanceOf('\org\phockito\tests\PhockitoNamespaceTest_MockMe');
+			$mockMatcher = new Hamcrest\Core\IsInstanceOf('\org\phockito\tests\PhockitoNamespaceTest_MockMe');
 
 			$typeBridge = \HamcrestTypeBridge::argOfTypeThat(
 				'\org\phockito\tests\PhockitoNamespaceTest_MockMe',

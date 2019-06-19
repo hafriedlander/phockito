@@ -1,8 +1,0 @@
---- 
-format: 1
-handler: 
-  piston:remote-revision: 739
-  piston:uuid: 2aa0e9f1-8e24-0410-adc4-1b6a3a6e65e2
-repository_class: Piston::Svn::Repository
-repository_url: http://hamcrest.googlecode.com/svn/trunk/hamcrest-php
-lock: false

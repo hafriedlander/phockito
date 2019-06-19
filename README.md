@@ -188,6 +188,10 @@ $mock->Bar(1, 3); // Returns null, since no stubbed return value matches
 Mockito returns a type-compatible false, based on the declared return type. We don't have defined type values in
 PHP, so we always return null. TODO: Support using phpdoc @return when declared.
 
+## Pronunciation
+
+Mockito has [answered this here](https://github.com/mockito/mockito/issues/889). Based on that, Phockito would be similar to [/pˈɒkitoʊ/](http://ipa-reader.xyz/)
+
 ## TODO
 
  - Mockito-specific hamcrest matchers (anyString, etc)
