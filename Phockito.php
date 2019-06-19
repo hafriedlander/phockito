@@ -1,5 +1,7 @@
 <?php
 
+use Hamcrest\Matcher;
+
 /**
  * Phockito - Mockito for PHP
  *
@@ -111,10 +113,10 @@ class Phockito {
 			$u = $a[$i]; $v = $b[$i];
 
 			// If the argument in $a is a hamcrest matcher, call match on it. WONTFIX: Can't check if function was passed a hamcrest matcher
-			if (interface_exists('Hamcrest_Matcher') && ($u instanceof Hamcrest_Matcher || isset($u->__phockito_matcher))) {
+			if (interface_exists(Matcher::class) && ($u instanceof Matcher || isset($u->__phockito_matcher))) {
 				// The matcher can either be passed directly, or wrapped in a mock (for type safety reasons)
 				$matcher = null;
-				if ($u instanceof Hamcrest_Matcher) {
+				if ($u instanceof Matcher) {
 					$matcher = $u;
 				} elseif (isset($u->__phockito_matcher)) {
 					$matcher = $u->__phockito_matcher;
@@ -506,16 +508,14 @@ EOT;
 	/**
 	 * Includes the Hamcrest matchers. You don't have to, but if you don't you can't to nice generic stubbing and verification
 	 * @static
-	 * @param bool $as_globals - When true (the default) the hamcrest matchers are available as global functions. If false, they're only available as static methods on Hamcrest_Matchers
+	 * @param bool $as_globals - When true (the default) the hamcrest matchers are available as global functions. If false, they're only available as static methods on the Hamcrest Matchers class
 	 */
 	static function include_hamcrest($include_globals = true) {
-		set_include_path(get_include_path().PATH_SEPARATOR.dirname(__FILE__).'/hamcrest-php/hamcrest');
-		
-		if ($include_globals) {
-			require_once('Hamcrest.php');
+	    if ($include_globals) {
+			require_once('vendor/hamcrest/hamcrest-php/hamcrest/Hamcrest.php');
 			require_once('HamcrestTypeBridge_Globals.php');
 		} else {
-			require_once('Hamcrest/Matchers.php');
+			require_once('vendor/hamcrest/hamcrest-php/hamcrest/Hamcrest/Matchers.php');
 			require_once('HamcrestTypeBridge.php');
 		}
 	}

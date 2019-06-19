@@ -1,6 +1,9 @@
 <?php
+
+use Hamcrest\Matcher;
+
 require_once('HamcrestTypeBridge.php');
 
-function argOfTypeThat($type, \Hamcrest_Matcher $matcher) {
-	HamcrestTypeBridge::argOfTypeThat($type, $matcher);
+function argOfTypeThat($type, Matcher $matcher) {
+	return HamcrestTypeBridge::argOfTypeThat($type, $matcher);
 }
